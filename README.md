@@ -10,7 +10,9 @@ The tool scrapes the internet for target companies and contacts, then synthesize
 
 ## Stack
 
-- HTML/CSS/JS
-- Supabase
-- Vercel
-- GitHub
+Claude.ai
+GitHub
+Vercel
+Supabase
+Warp
+Anthropic Console
