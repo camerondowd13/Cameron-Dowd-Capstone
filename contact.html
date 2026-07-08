@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Try it free — AE Prospecting Copilot</title>
+  <meta name="description" content="See real sample matches for your territory and industry, instantly.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="site">
+    <div class="wrap">
+      <a class="logo" href="index.html"><span class="dot"></span>AE Prospecting Copilot</a>
+      <nav class="site-nav">
+        <a href="index.html">Home</a>
+        <a href="about.html">About</a>
+        <a href="contact.html" class="active nav-cta">Try it free</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="section">
+    <div class="wrap prose">
+      <h1>Try it free — see it work for your ICP</h1>
+      <p>Tell us where you sell and who you sell to. We'll show you a few real matches — no signup, no waiting around — pulled from the exact criteria AEs and SDRs use to prospect in construction, manufacturing, and healthcare.</p>
+      <p><em>(Sample data shown below reflects real ICP criteria — territory, company size, and title — but is not a live data pull.)</em></p>
+
+      <div class="demo-form">
+        <div class="field">
+          <label for="territory">Territory</label>
+          <select id="territory">
+            <option value="">Any territory</option>
+            <option value="New York">New York</option>
+            <option value="Florida">Florida</option>
+            <option value="Virginia">Virginia</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="industry">Industry</label>
+          <select id="industry">
+            <option value="">Any industry</option>
+            <option value="Construction">Construction</option>
+            <option value="Manufacturing">Manufacturing</option>
+            <option value="Healthcare">Healthcare</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="title">Target title</label>
+          <select id="title">
+            <option value="">Any title</option>
+            <option value="CEO">CEO</option>
+            <option value="CFO">CFO</option>
+            <option value="CTO">CTO</option>
+            <option value="AP Manager">AP Manager</option>
+            <option value="Director of Finance">Director of Finance</option>
+          </select>
+        </div>
+
+        <button class="btn" id="showMatches">Show my matches</button>
+        <span class="note">Results are sample data seeded from real ICP criteria — see About for the story behind this tool.</span>
+      </div>
+
+      <div id="results"></div>
+
+      <div class="below-results" id="belowResults" hidden>
+        <p>Like what you see? This is a sample of what the full tool delivers — live, verified, and ready to call. <a href="mailto:you@example.com">Get in touch</a> to talk about early access.</p>
+      </div>
+
+      <p class="fallback">Prefer to talk first? Email <a href="mailto:you@example.com">you@example.com</a> <em>(placeholder — swap before launch)</em></p>
+    </div>
+  </section>
+
+  <footer class="site">
+    <div class="wrap">
+      &copy; 2026 Cameron Dowd — AE Prospecting Copilot
+    </div>
+  </footer>
+
+  <script src="data.js"></script>
+  <script>
+    const resultsEl = document.getElementById('results');
+    const belowResultsEl = document.getElementById('belowResults');
+
+    function renderResults(matches) {
+      resultsEl.innerHTML = '';
+
+      if (matches.length === 0) {
+        resultsEl.innerHTML = '<p class="empty-state">No sample matches for that exact combination yet — try loosening a filter (e.g. "Any title").</p>';
+        belowResultsEl.hidden = true;
+        return;
+      }
+
+      const shown = matches.slice(0, 3);
+
+      shown.forEach(m => {
+        const card = document.createElement('div');
+        card.className = 'result-card';
+        card.innerHTML = `
+          <h4>${m.company}</h4>
+          <div class="meta">${m.territory} · ${m.industry} · ${m.size} · Trigger: ${m.trigger}</div>
+          <div class="contact-line"><strong>${m.contact}</strong>, ${m.title} — ${m.phone} · ${m.email}</div>
+        `;
+        resultsEl.appendChild(card);
+      });
+
+      belowResultsEl.hidden = false;
+    }
+
+    document.getElementById('showMatches').addEventListener('click', () => {
+      const territory = document.getElementById('territory').value;
+      const industry = document.getElementById('industry').value;
+      const title = document.getElementById('title').value;
+
+      const matches = SAMPLE_MATCHES.filter(m => {
+        return (!territory || m.territory === territory)
+          && (!industry || m.industry === industry)
+          && (!title || m.title === title);
+      });
+
+      renderResults(matches);
+    });
+  </script>
+
+</body>
+</html>
