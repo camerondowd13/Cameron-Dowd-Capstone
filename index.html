@@ -25,6 +25,20 @@
     <div class="blob-side blob-side-left" aria-hidden="true"></div>
     <div class="blob-side blob-side-right" aria-hidden="true"></div>
     <div class="blob-purple-2" aria-hidden="true"></div>
+    <div class="floating-stat" id="floatingStat">
+      <div class="stat-row stat-row-1">
+        <span class="stat-number" id="statNumber1">0%</span>
+        <span class="stat-caption">less time spent building lists (target)</span>
+      </div>
+      <div class="stat-row stat-row-2">
+        <span class="stat-number" id="statNumber2">0</span>
+        <span class="stat-caption">territories covered — NY, FL, VA</span>
+      </div>
+      <div class="stat-row stat-row-3">
+        <span class="stat-number" id="statNumber3">0</span>
+        <span class="stat-caption">verified fields per contact, no partial credit</span>
+      </div>
+    </div>
     <div class="wrap">
       <span class="eyebrow">Built for AEs &amp; SDRs</span>
       <h1>We find them. You close them.</h1>
@@ -109,6 +123,25 @@
       &copy; 2026 Cameron Dowd — AE Prospecting Copilot
     </div>
   </footer>
+
+  <script>
+    (function () {
+      function animateCount(el, target, duration, suffix) {
+        const start = performance.now();
+        function tick(now) {
+          const progress = Math.min((now - start) / duration, 1);
+          const eased = 1 - Math.pow(1 - progress, 3);
+          el.textContent = Math.round(eased * target) + suffix;
+          if (progress < 1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+      }
+
+      animateCount(document.getElementById('statNumber1'), 85, 1400, '%');
+      setTimeout(() => animateCount(document.getElementById('statNumber2'), 3, 700, ''), 300);
+      setTimeout(() => animateCount(document.getElementById('statNumber3'), 5, 700, ''), 600);
+    })();
+  </script>
 
 </body>
 </html>
