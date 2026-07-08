@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>We find them. You close them. — AE Prospecting Copilot</title>
+  <title>We find them. You close them. — Sonar</title>
   <meta name="description" content="An AI prospecting engine that hands AEs and SDRs verified, ICP-fit companies with fully-contactable decision-makers.">
   <link rel="stylesheet" href="style.css">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
@@ -12,7 +12,7 @@
 
   <header class="site">
     <div class="wrap">
-      <a class="logo" href="index.html"><svg class="logo-mark" viewBox="0 0 64 64" width="26" height="26"><rect width="64" height="64" rx="16" fill="#7c3aed"/><circle cx="27" cy="27" r="13" fill="none" stroke="white" stroke-width="3.5"/><line x1="36" y1="36" x2="46" y2="46" stroke="white" stroke-width="3.5" stroke-linecap="round"/><path d="M21 27 L25 31 L33 22" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>AE Prospecting Copilot</a>
+      <a class="logo" href="index.html"><svg class="logo-mark" viewBox="0 0 64 64" width="26" height="26"><rect width="64" height="64" rx="16" fill="#7c3aed"/><circle cx="32" cy="32" r="4" fill="white"/><circle cx="32" cy="32" r="13" fill="none" stroke="white" stroke-width="3" opacity="0.85"/><circle cx="32" cy="32" r="22" fill="none" stroke="white" stroke-width="3" opacity="0.5"/></svg>Sonar</a>
       <nav class="site-nav">
         <a href="index.html" class="active">Home</a>
         <a href="about.html">About</a>
@@ -28,6 +28,31 @@
     <div class="blob-side blob-side-right" aria-hidden="true"></div>
     <div class="blob-purple-2" aria-hidden="true"></div>
     <div class="wrap hero-wrap">
+      <svg class="hero-sonar-bg" viewBox="0 0 600 400" aria-hidden="true">
+        <defs>
+          <radialGradient id="sonarGlow" cx="50%" cy="100%" r="90%">
+            <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.30"/>
+            <stop offset="55%" stop-color="#0d9488" stop-opacity="0.14"/>
+            <stop offset="100%" stop-color="#0d9488" stop-opacity="0"/>
+          </radialGradient>
+          <linearGradient id="sonarSweepGradient" x1="300" y1="380" x2="300" y2="40" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#f0abfc" stop-opacity="0"/>
+            <stop offset="55%" stop-color="#f0abfc" stop-opacity="0.45"/>
+            <stop offset="100%" stop-color="#f0abfc" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+
+        <path d="M300,380 L21,185 A340,340 0 0,1 579,185 Z" fill="url(#sonarGlow)"/>
+
+        <path d="M210,317 A110,110 0 0,1 390,317" fill="none" stroke="#c4b5fd" stroke-width="1.5" opacity="0.3"/>
+        <path d="M160.8,282.4 A170,170 0 0,1 439.2,282.4" fill="none" stroke="#c4b5fd" stroke-width="1.5" opacity="0.25"/>
+        <path d="M111.6,248 A230,230 0 0,1 488.4,248" fill="none" stroke="#c4b5fd" stroke-width="1.5" opacity="0.2"/>
+        <path d="M62.5,213.5 A290,290 0 0,1 537.5,213.5" fill="none" stroke="#c4b5fd" stroke-width="1.5" opacity="0.15"/>
+
+        <g class="sonar-sweep">
+          <path d="M300,380 L255.6,42.9 A340,340 0 0,1 344.4,42.9 Z" fill="url(#sonarSweepGradient)"/>
+        </g>
+      </svg>
       <div class="browser-mock" id="browserMock">
         <div class="browser-chrome">
           <span class="chrome-dot chrome-dot-red"></span>
@@ -69,7 +94,7 @@
           </ul>
         </div>
       </div>
-      <span class="eyebrow">Built for AEs &amp; SDRs</span>
+      <span class="eyebrow">Prospecting Copilot for AEs and BDRs</span>
       <h1>We find them. You close them.</h1>
       <p class="sub">You already know your ICP. Stop spending hours finding the companies and people who fit it — we hand you the list, verified and ready to call.</p>
       <div class="cta-row">
@@ -77,6 +102,47 @@
         <a class="btn btn-secondary" href="get-in-touch.html">Contact us</a>
       </div>
       <span class="cta-note">See real sample matches for your state and industry — instantly, no signup required.</span>
+    </div>
+  </section>
+
+  <section class="mascot-section">
+    <div class="wrap mascot-wrap">
+      <div class="find-card find-card-left">
+        <span class="find-badge">✓ Match found</span>
+        <div class="find-name">Crestview Education Partners</div>
+        <div class="find-meta">North Carolina · Education · CFO</div>
+      </div>
+      <svg class="mascot-illustration" viewBox="0 0 400 420" width="260" height="273" aria-hidden="true">
+        <rect x="70" y="190" width="260" height="230" rx="50" fill="#0d9488"/>
+        <circle cx="200" cy="280" r="22" fill="#7c3aed"/>
+        <circle cx="200" cy="280" r="10" fill="#e6dcfc"/>
+        <g class="mascot-scan">
+          <line x1="200" y1="50" x2="200" y2="20" stroke="#0d9488" stroke-width="6" stroke-linecap="round"/>
+          <circle class="antenna-light" cx="200" cy="14" r="8" fill="#0d9488"/>
+          <path d="M120,220 L95,150 L150,112" fill="none" stroke="#0d9488" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M280,220 L305,150 L250,112" fill="none" stroke="#0d9488" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+          <rect x="130" y="50" width="140" height="130" rx="36" fill="#7c3aed"/>
+          <rect x="150" y="75" width="100" height="75" rx="20" fill="#f0eafc"/>
+          <path d="M175,128 Q200,144 225,128" fill="none" stroke="#0d9488" stroke-width="6" stroke-linecap="round"/>
+          <circle cx="150" cy="112" r="17" fill="#0b7a70"/>
+          <circle cx="250" cy="112" r="17" fill="#0b7a70"/>
+          <circle class="radar-ping" cx="200" cy="106" r="40" fill="none" stroke="#0d9488" stroke-width="3"/>
+          <circle class="radar-ping radar-ping-delay" cx="200" cy="106" r="40" fill="none" stroke="#0d9488" stroke-width="3"/>
+          <circle class="radar-ping radar-ping-delay-2" cx="200" cy="106" r="40" fill="none" stroke="#0d9488" stroke-width="3"/>
+          <rect x="195" y="96" width="10" height="20" fill="#18162a"/>
+          <circle cx="175" cy="106" r="38" fill="#18162a"/>
+          <circle cx="225" cy="106" r="38" fill="#18162a"/>
+          <circle cx="175" cy="106" r="24" fill="#cbd5e1"/>
+          <circle cx="225" cy="106" r="24" fill="#cbd5e1"/>
+          <circle cx="167" cy="98" r="7" fill="#f1f5f9"/>
+          <circle cx="217" cy="98" r="7" fill="#f1f5f9"/>
+        </g>
+      </svg>
+      <div class="find-card find-card-right">
+        <span class="find-badge">✓ Match found</span>
+        <div class="find-name">Redrock Energy Partners</div>
+        <div class="find-meta">Texas · Energy & Utilities · CFO</div>
+      </div>
     </div>
   </section>
 
@@ -126,7 +192,7 @@
 
   <footer class="site">
     <div class="wrap">
-      &copy; 2026 Cameron Dowd — AE Prospecting Copilot
+      &copy; 2026 Cameron Dowd — Sonar
     </div>
   </footer>
 

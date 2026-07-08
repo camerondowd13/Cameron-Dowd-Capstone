@@ -64,10 +64,11 @@ header.site .wrap {
 }
 
 .logo {
-  font-weight: 700;
-  font-size: 1.05rem;
+  font-weight: 800;
+  font-size: 1.5rem;
+  letter-spacing: -0.02em;
   text-decoration: none;
-  color: var(--ink);
+  color: var(--accent);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -133,6 +134,28 @@ nav.site-nav a.nav-cta-secondary:hover {
 
 .hero-wrap {
   position: relative;
+}
+
+.hero-sonar-bg {
+  position: absolute;
+  top: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 700px;
+  height: auto;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.sonar-sweep {
+  transform-box: view-box;
+  transform-origin: 300px 380px;
+  animation: sonarSweep 5s ease-in-out infinite;
+}
+
+@keyframes sonarSweep {
+  0%, 100% { transform: rotate(-52deg); }
+  50% { transform: rotate(52deg); }
 }
 
 .browser-mock {
@@ -451,6 +474,123 @@ nav.site-nav a.nav-cta-secondary:hover {
   margin-top: 16px;
   font-size: 0.9rem;
   color: var(--ink-soft);
+}
+
+/* Mascot */
+.mascot-section {
+  padding: 32px 0;
+}
+
+.mascot-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 36px;
+  flex-wrap: wrap;
+}
+
+.mascot-illustration {
+  flex-shrink: 0;
+  animation: mascotBob 2.4s ease-in-out infinite;
+}
+
+.find-card {
+  width: 190px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-lg);
+  text-align: left;
+  animation: findPop 4s ease-in-out infinite;
+}
+
+.find-card-right {
+  animation-delay: 2s;
+}
+
+.find-badge {
+  display: inline-block;
+  background: var(--accent-soft);
+  color: var(--accent-dark);
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  margin-bottom: 8px;
+}
+
+.find-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 3px;
+}
+
+.find-meta {
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+}
+
+@keyframes findPop {
+  0% { opacity: 0; transform: translateY(12px) scale(0.92); }
+  15% { opacity: 1; transform: translateY(0) scale(1); }
+  85% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-12px) scale(0.92); }
+}
+
+@keyframes mascotBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.mascot-scan {
+  transform-box: view-box;
+  transform-origin: 200px 190px;
+  animation: mascotScan 2.6s ease-in-out infinite;
+}
+
+@keyframes mascotScan {
+  0%, 100% { transform: rotate(-16deg); }
+  50% { transform: rotate(16deg); }
+}
+
+.antenna-light {
+  animation: antennaBlink 1s ease-in-out infinite;
+}
+
+@keyframes antennaBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.radar-ping {
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0.6;
+  animation: radarPing 2.2s ease-out infinite;
+}
+
+.radar-ping-delay {
+  animation-delay: 0.7s;
+}
+
+.radar-ping-delay-2 {
+  animation-delay: 1.4s;
+}
+
+@keyframes radarPing {
+  0% { r: 40; opacity: 0.6; }
+  100% { r: 85; opacity: 0; }
+}
+
+.mascot-heading {
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin: 0;
 }
 
 /* Benefits */
