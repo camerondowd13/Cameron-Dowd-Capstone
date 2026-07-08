@@ -6,12 +6,13 @@
   <title>We find them. You close them. — AE Prospecting Copilot</title>
   <meta name="description" content="An AI prospecting engine that hands AEs and SDRs verified, ICP-fit companies with fully-contactable decision-makers.">
   <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
 </head>
 <body>
 
   <header class="site">
     <div class="wrap">
-      <a class="logo" href="index.html"><span class="dot"></span>AE Prospecting Copilot</a>
+      <a class="logo" href="index.html"><svg class="logo-mark" viewBox="0 0 64 64" width="26" height="26"><rect width="64" height="64" rx="16" fill="#7c3aed"/><circle cx="27" cy="27" r="13" fill="none" stroke="white" stroke-width="3.5"/><line x1="36" y1="36" x2="46" y2="46" stroke="white" stroke-width="3.5" stroke-linecap="round"/><path d="M21 27 L25 31 L33 22" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>AE Prospecting Copilot</a>
       <nav class="site-nav">
         <a href="index.html" class="active">Home</a>
         <a href="about.html">About</a>
@@ -25,21 +26,28 @@
     <div class="blob-side blob-side-left" aria-hidden="true"></div>
     <div class="blob-side blob-side-right" aria-hidden="true"></div>
     <div class="blob-purple-2" aria-hidden="true"></div>
-    <div class="floating-stat" id="floatingStat">
-      <div class="stat-row stat-row-1">
-        <span class="stat-number" id="statNumber1">0%</span>
-        <span class="stat-caption">less time spent building lists (target)</span>
+    <div class="wrap hero-wrap">
+      <div class="floating-stat" id="floatingStat">
+        <div class="stat-row stat-row-1">
+          <span class="stat-number" id="statNumber1">0%</span>
+          <span class="stat-caption">less time spent building lists (target)</span>
+        </div>
+        <div class="stat-row stat-row-2">
+          <span class="stat-number" id="statNumber2">0</span>
+          <span class="stat-caption">US states covered — international on the roadmap</span>
+        </div>
+        <div class="stat-row stat-row-3">
+          <span class="stat-number" id="statNumber3">0</span>
+          <span class="stat-caption">verified fields, no partial credit</span>
+          <ul class="field-list">
+            <li>State/City</li>
+            <li>Industry</li>
+            <li>Job Title</li>
+            <li>Phone</li>
+            <li>Email</li>
+          </ul>
+        </div>
       </div>
-      <div class="stat-row stat-row-2">
-        <span class="stat-number" id="statNumber2">0</span>
-        <span class="stat-caption">territories covered — NY, FL, VA</span>
-      </div>
-      <div class="stat-row stat-row-3">
-        <span class="stat-number" id="statNumber3">0</span>
-        <span class="stat-caption">verified fields per contact, no partial credit</span>
-      </div>
-    </div>
-    <div class="wrap">
       <span class="eyebrow">Built for AEs &amp; SDRs</span>
       <h1>We find them. You close them.</h1>
       <p class="sub">You already know your ICP. Stop spending hours finding the companies and people who fit it — we hand you the list, verified and ready to call.</p>
@@ -47,10 +55,7 @@
         <a class="btn" href="contact.html">Try it free</a>
         <a class="btn btn-secondary" href="#preview">See how it works</a>
       </div>
-      <span class="cta-note">See real sample matches for your territory and industry — instantly, no signup required.</span>
-      <div class="stat-strip">
-        <strong>80–90%</strong> less time spent building lists — target based on manual baseline of 5–10 hrs/week
-      </div>
+      <span class="cta-note">See real sample matches for your state and industry — instantly, no signup required.</span>
     </div>
   </section>
 
@@ -77,7 +82,7 @@
   <section class="preview-section" id="preview">
     <div class="wrap">
       <h2>See what a match looks like</h2>
-      <p class="preview-sub">Real sample output from the tool — territory, industry, and a fully-contactable decision-maker, every time.</p>
+      <p class="preview-sub">Real sample output from the tool — state, industry, and a fully-contactable decision-maker, every time.</p>
       <div class="preview-cards">
         <div class="result-card">
           <h4>Tidewater Health Partners</h4>
@@ -100,15 +105,15 @@
       <div class="faq-list">
         <details class="faq-item">
           <summary>Is this real data?</summary>
-          <p>The samples on this site are seeded from real ICP criteria — territory, company size, industry, and title — so they're representative of live output, not a live data pull. The full tool is in active development.</p>
+          <p>The samples on this site are seeded from real ICP criteria — state, company size, industry, and job title — so they're representative of live output, not a live data pull. The full tool is in active development.</p>
         </details>
         <details class="faq-item">
           <summary>How accurate is the ICP matching?</summary>
-          <p>Matching is binary against a defined ICP (territory, company size, industry, and title) — no confidence scoring, no partial credit. A company only shows up if it has a fully-contactable decision-maker.</p>
+          <p>Matching is binary against a defined ICP (state, company size, industry, and job title) — no confidence scoring, no partial credit. A company only shows up if it has a fully-contactable decision-maker.</p>
         </details>
         <details class="faq-item">
           <summary>Do I need to sign up to try it?</summary>
-          <p>No. The "Try it free" demo runs instantly with no signup — pick your territory and industry and see sample matches right away.</p>
+          <p>No. The "Try it free" demo runs instantly with no signup — pick your state and industry and see sample matches right away.</p>
         </details>
         <details class="faq-item">
           <summary>What happens after I request early access?</summary>
@@ -138,7 +143,7 @@
       }
 
       animateCount(document.getElementById('statNumber1'), 85, 1400, '%');
-      setTimeout(() => animateCount(document.getElementById('statNumber2'), 3, 700, ''), 300);
+      setTimeout(() => animateCount(document.getElementById('statNumber2'), 50, 700, ''), 300);
       setTimeout(() => animateCount(document.getElementById('statNumber3'), 5, 700, ''), 600);
     })();
   </script>
