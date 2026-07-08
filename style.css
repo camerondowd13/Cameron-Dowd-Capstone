@@ -120,6 +120,91 @@ nav.site-nav a.nav-cta:hover {
   position: relative;
 }
 
+.browser-mock {
+  position: absolute;
+  z-index: 2;
+  top: 24px;
+  left: -50px;
+  width: 240px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  text-align: left;
+  transform: rotate(-2deg);
+}
+
+.browser-chrome {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  background: var(--bg-alt);
+  border-bottom: 1px solid var(--border);
+}
+
+.chrome-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+}
+
+.chrome-dot-red { background: #f87171; }
+.chrome-dot-yellow { background: #fbbf24; }
+.chrome-dot-green { background: #4ade80; }
+
+.chrome-url {
+  margin-left: 6px;
+  font-size: 0.65rem;
+  color: var(--ink-soft);
+  background: var(--card-bg);
+  border-radius: 4px;
+  padding: 2px 8px;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.browser-body {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mini-result {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--bg);
+}
+
+.mini-result-name {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 3px;
+}
+
+.mini-result-meta {
+  font-size: 0.64rem;
+  color: var(--ink-soft);
+  margin-bottom: 6px;
+}
+
+.mini-result-contact {
+  font-size: 0.66rem;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+
+.mini-result-contact strong {
+  color: var(--accent-dark);
+}
+
 .floating-stat {
   position: absolute;
   z-index: 2;
@@ -296,7 +381,7 @@ nav.site-nav a.nav-cta:hover {
   font-size: clamp(2.25rem, 5.5vw, 3.4rem);
   line-height: 1.1;
   margin: 0 auto 20px;
-  max-width: 680px;
+  max-width: 400px;
   letter-spacing: -0.03em;
   font-weight: 700;
 }
@@ -699,6 +784,29 @@ nav.site-nav a.nav-cta:hover {
   font-size: 0.98rem;
 }
 
+/* Between mobile and full desktop, there isn't reliably enough side
+   gutter around the centered headline for both floating hero
+   elements — drop them to static stacking instead of risking overlap. */
+@media (max-width: 1200px) and (min-width: 721px) {
+  .floating-stat {
+    position: static;
+    transform: none;
+    width: 100%;
+    max-width: 320px;
+    margin: 20px auto 0;
+    text-align: center;
+    align-items: center;
+  }
+
+  .browser-mock {
+    position: static;
+    transform: none;
+    width: 100%;
+    max-width: 320px;
+    margin: 20px auto 0;
+  }
+}
+
 /* Footer */
 footer.site {
   border-top: 1px solid var(--border);
@@ -740,5 +848,13 @@ footer.site .wrap {
     margin: 28px auto 0;
     text-align: center;
     align-items: center;
+  }
+
+  .browser-mock {
+    position: static;
+    transform: none;
+    width: 100%;
+    max-width: 320px;
+    margin: 0 auto 20px;
   }
 }
