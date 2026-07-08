@@ -415,9 +415,45 @@ nav.site-nav a.nav-cta:hover {
   margin-top: 14px;
 }
 
+/* Token bar */
+.token-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 28px;
+  padding: 12px 18px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  width: fit-content;
+}
+
+.token-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.token-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.token-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: background 0.2s ease;
+}
+
+.token-dot.filled {
+  background: var(--accent);
+}
+
 /* Results */
 #results {
-  margin-top: 32px;
+  margin-top: 20px;
 }
 
 .result-card {
@@ -446,6 +482,71 @@ nav.site-nav a.nav-cta:hover {
 
 .result-card .contact-line strong {
   font-weight: 600;
+}
+
+/* Reveal / unlock animation */
+.reveal-wrap {
+  display: inline-block;
+}
+
+.reveal-slot {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  height: 1.3em;
+  vertical-align: middle;
+}
+
+.reveal-slot .masked,
+.reveal-slot .real {
+  display: block;
+  transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+}
+
+.reveal-slot .masked {
+  color: var(--ink-soft);
+  letter-spacing: 0.03em;
+}
+
+.reveal-slot .real {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.reveal-slot.revealed .masked {
+  transform: translateY(-100%);
+}
+
+.reveal-slot.revealed .real {
+  transform: translateY(-100%);
+}
+
+.unlock-btn {
+  margin-top: 14px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent-dark);
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+
+.unlock-btn:hover:not(:disabled) {
+  background: var(--accent-soft);
+}
+
+.unlock-btn:disabled {
+  cursor: default;
+  opacity: 0.55;
+  border-color: var(--border);
+  color: var(--ink-soft);
 }
 
 .empty-state {

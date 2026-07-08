@@ -63,6 +63,11 @@
         <span class="note">Results are sample data seeded from real ICP criteria — see About for the story behind this tool.</span>
       </div>
 
+      <div class="token-bar" id="tokenBar" hidden>
+        <span class="token-label">Unlock tokens</span>
+        <span class="token-dots" id="tokenDots"></span>
+      </div>
+
       <div id="results"></div>
 
       <div class="below-results" id="belowResults" hidden>
@@ -83,6 +88,29 @@
   <script>
     const resultsEl = document.getElementById('results');
     const belowResultsEl = document.getElementById('belowResults');
+    const tokenBarEl = document.getElementById('tokenBar');
+    const tokenDotsEl = document.getElementById('tokenDots');
+
+    const STARTING_TOKENS = 3;
+    let tokensRemaining = STARTING_TOKENS;
+
+    function maskPhone(phone) {
+      return phone.replace(/\d/g, '•');
+    }
+
+    function maskEmail(email) {
+      const [user, domain] = email.split('@');
+      const maskedUser = user[0] + '•'.repeat(Math.max(user.length - 1, 3));
+      return `${maskedUser}@${domain}`;
+    }
+
+    function renderTokenDots() {
+      let dots = '';
+      for (let i = 0; i < STARTING_TOKENS; i++) {
+        dots += `<span class="token-dot ${i < tokensRemaining ? 'filled' : ''}"></span>`;
+      }
+      tokenDotsEl.innerHTML = dots;
+    }
 
     function renderResults(matches) {
       resultsEl.innerHTML = '';
@@ -90,6 +118,7 @@
       if (matches.length === 0) {
         resultsEl.innerHTML = '<p class="empty-state">No sample matches for that exact combination yet — try loosening a filter (e.g. "Any title").</p>';
         belowResultsEl.hidden = true;
+        tokenBarEl.hidden = true;
         return;
       }
 
@@ -101,11 +130,50 @@
         card.innerHTML = `
           <h4>${m.company}</h4>
           <div class="meta">${m.territory} · ${m.industry} · ${m.size} · Trigger: ${m.trigger}</div>
-          <div class="contact-line"><strong>${m.contact}</strong>, ${m.title} — ${m.phone} · ${m.email}</div>
+          <div class="contact-line">
+            <strong>${m.contact}</strong>, ${m.title} —
+            <span class="reveal-wrap">
+              <span class="reveal-slot">
+                <span class="masked">${maskPhone(m.phone)}</span>
+                <span class="real">${m.phone}</span>
+              </span>
+            </span>
+            ·
+            <span class="reveal-wrap">
+              <span class="reveal-slot">
+                <span class="masked">${maskEmail(m.email)}</span>
+                <span class="real">${m.email}</span>
+              </span>
+            </span>
+          </div>
+          <button class="unlock-btn">Unlock contact (1 token)</button>
         `;
+
+        const unlockBtn = card.querySelector('.unlock-btn');
+        unlockBtn.addEventListener('click', () => {
+          if (tokensRemaining <= 0) return;
+
+          tokensRemaining -= 1;
+          renderTokenDots();
+
+          card.querySelectorAll('.reveal-slot').forEach(slot => slot.classList.add('revealed'));
+          unlockBtn.textContent = 'Unlocked';
+          unlockBtn.disabled = true;
+
+          if (tokensRemaining === 0) {
+            resultsEl.querySelectorAll('.unlock-btn:not(:disabled)').forEach(btn => {
+              btn.disabled = true;
+              btn.textContent = 'Out of tokens';
+            });
+          }
+        });
+
         resultsEl.appendChild(card);
       });
 
+      tokensRemaining = STARTING_TOKENS;
+      renderTokenDots();
+      tokenBarEl.hidden = false;
       belowResultsEl.hidden = false;
     }
 
