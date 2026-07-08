@@ -337,18 +337,6 @@ nav.site-nav a.nav-cta:hover {
   flex-wrap: wrap;
 }
 
-.btn-secondary {
-  background: transparent;
-  color: var(--ink);
-  border: 1px solid var(--border);
-  box-shadow: none;
-}
-
-.btn-secondary:hover {
-  background: var(--bg-alt);
-  transform: none;
-}
-
 .cta-note {
   display: block;
   margin-top: 16px;
@@ -656,31 +644,6 @@ nav.site-nav a.nav-cta:hover {
   margin-top: 20px;
   font-size: 0.88rem;
   color: var(--ink-soft);
-}
-
-/* Preview section */
-.preview-section {
-  padding: 24px 0 96px;
-  text-align: center;
-}
-
-.preview-section h2 {
-  font-size: clamp(1.6rem, 4vw, 2.1rem);
-  letter-spacing: -0.02em;
-  margin-bottom: 12px;
-}
-
-.preview-sub {
-  color: var(--ink-soft);
-  max-width: 520px;
-  margin: 0 auto 36px;
-  font-size: 1.05rem;
-}
-
-.preview-cards {
-  max-width: 640px;
-  margin: 0 auto 32px;
-  text-align: left;
 }
 
 /* FAQ */
