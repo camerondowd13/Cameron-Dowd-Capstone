@@ -540,25 +540,44 @@ nav.site-nav a.nav-cta:hover {
   margin-bottom: 10px;
 }
 
-.result-card .contact-line {
+.result-card .contact-line,
+.result-card .contact-name {
   font-size: 0.95rem;
+  margin-bottom: 14px;
 }
 
-.result-card .contact-line strong {
+.result-card .contact-line strong,
+.result-card .contact-name strong {
   font-weight: 600;
 }
 
-/* Reveal / unlock animation */
-.reveal-wrap {
-  display: inline-block;
+.contact-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
 }
 
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 150px;
+}
+
+.detail-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+}
+
+/* Reveal / unlock animation */
 .reveal-slot {
   position: relative;
-  display: inline-grid;
+  display: grid;
   overflow: hidden;
-  height: 1.3em;
-  vertical-align: middle;
+  height: 1.35em;
 }
 
 .reveal-slot .masked,
@@ -585,7 +604,7 @@ nav.site-nav a.nav-cta:hover {
 }
 
 .reveal-slot.revealed .real {
-  transform: translateY(-100%);
+  transform: translateY(0);
 }
 
 .unlock-btn {
