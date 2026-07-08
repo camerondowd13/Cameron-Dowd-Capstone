@@ -555,7 +555,7 @@ nav.site-nav a.nav-cta:hover {
 
 .reveal-slot {
   position: relative;
-  display: inline-block;
+  display: inline-grid;
   overflow: hidden;
   height: 1.3em;
   vertical-align: middle;
@@ -563,7 +563,8 @@ nav.site-nav a.nav-cta:hover {
 
 .reveal-slot .masked,
 .reveal-slot .real {
-  display: block;
+  grid-row: 1;
+  grid-column: 1;
   transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
 }
@@ -574,11 +575,9 @@ nav.site-nav a.nav-cta:hover {
 }
 
 .reveal-slot .real {
-  position: absolute;
-  top: 100%;
-  left: 0;
   color: var(--ink);
   font-weight: 600;
+  transform: translateY(100%);
 }
 
 .reveal-slot.revealed .masked {
