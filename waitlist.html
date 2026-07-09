@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Join the Waitlist — Sonar</title>
+  <meta name="description" content="Get early access to Sonar as the full tool comes online.">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+</head>
+<body>
+
+  <header class="site">
+    <div class="wrap">
+      <a class="logo" href="index.html"><svg class="logo-mark" viewBox="0 0 64 64" width="26" height="26"><rect width="64" height="64" rx="16" fill="#7c3aed"/><circle cx="32" cy="32" r="4" fill="white"/><circle cx="32" cy="32" r="13" fill="none" stroke="white" stroke-width="3" opacity="0.85"/><circle cx="32" cy="32" r="22" fill="none" stroke="white" stroke-width="3" opacity="0.5"/></svg>Sonar</a>
+      <nav class="site-nav">
+        <a href="index.html">Home</a>
+        <a href="about.html">About</a>
+        <a href="get-in-touch.html" class="nav-cta-secondary">Contact</a>
+        <a href="waitlist.html" class="active">Waitlist</a>
+        <a href="contact.html" class="nav-cta">Try it free</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="section">
+    <div class="wrap prose">
+      <h1>Join the waitlist</h1>
+      <p>Sonar is in active development. Drop your info below and you'll be first in line for early access — no spam, just a heads-up when it's ready.</p>
+
+      <form class="contact-form" id="waitlistForm">
+        <div class="field">
+          <label for="wl_name">Name</label>
+          <input type="text" id="wl_name" required>
+        </div>
+
+        <div class="field">
+          <label for="wl_email">Email</label>
+          <input type="email" id="wl_email" required>
+        </div>
+
+        <div class="field">
+          <label for="wl_message">Anything specific you're hoping Sonar solves? (optional)</label>
+          <textarea id="wl_message" rows="4"></textarea>
+        </div>
+
+        <button class="btn" type="submit" id="wl_submitBtn">Join waitlist</button>
+        <p class="form-status" id="wl_formStatus" hidden></p>
+      </form>
+    </div>
+  </section>
+
+  <footer class="site">
+    <div class="wrap">
+      &copy; 2026 Cameron Dowd — Sonar
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="config.js"></script>
+  <script>
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const formEl = document.getElementById('waitlistForm');
+    const statusEl = document.getElementById('wl_formStatus');
+    const submitBtn = document.getElementById('wl_submitBtn');
+
+    formEl.addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      const name = document.getElementById('wl_name').value.trim();
+      const email = document.getElementById('wl_email').value.trim();
+      const message = document.getElementById('wl_message').value.trim();
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Joining…';
+      statusEl.hidden = true;
+
+      const { error } = await supabaseClient.from('waitlist').insert({
+        name,
+        email,
+        message: message || null,
+      });
+
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Join waitlist';
+
+      if (error) {
+        statusEl.textContent = "Something went wrong — please try again in a moment.";
+        statusEl.className = 'form-status form-status-error';
+        statusEl.hidden = false;
+        return;
+      }
+
+      formEl.reset();
+      statusEl.textContent = "You're on the list — I'll be in touch when it's ready.";
+      statusEl.className = 'form-status form-status-success';
+      statusEl.hidden = false;
+    });
+  </script>
+
+</body>
+</html>
