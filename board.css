@@ -1,0 +1,177 @@
+/* Dark "operator tool" theme for the outreach board — overrides style.css
+   custom properties, scoped to body.dark-theme so the rest of the public
+   site stays untouched. */
+
+body.dark-theme {
+  --ink: #f2f2f5;
+  --ink-soft: #8b8b96;
+  --bg: #0a0a0d;
+  --card-bg: #141418;
+  --bg-alt: #1c1c22;
+  --bg-tint: #1c1c22;
+  --border: rgba(255, 255, 255, 0.08);
+  --accent: #4c5fe0;
+  --accent-dark: #3d4bc4;
+  --accent-soft: rgba(76, 95, 224, 0.16);
+  --accent-ink: #ffffff;
+  --accent2: #22c55e;
+  --accent2-dark: #16a34a;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.4), 0 20px 48px rgba(0, 0, 0, 0.5);
+
+  background-image: none;
+}
+
+body.dark-theme header.site {
+  background: rgba(10, 10, 13, 0.85);
+}
+
+body.dark-theme .logo {
+  color: var(--ink);
+}
+
+body.dark-theme .table-wrap {
+  border-radius: var(--radius-lg);
+}
+
+body.dark-theme .kanban-table th {
+  color: var(--ink-soft);
+  border-bottom-color: var(--border);
+}
+
+body.dark-theme .kanban-table th.sorted {
+  color: var(--ink);
+}
+
+body.dark-theme .kanban-table td {
+  border-bottom-color: var(--border);
+}
+
+body.dark-theme .kanban-table tbody tr:hover {
+  background: var(--bg-alt);
+}
+
+/* Company avatar + two-line name/context cell */
+.company-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.company-avatar {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.company-name-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.company-name-block > span:first-child {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.company-subtitle {
+  font-size: 0.76rem;
+  font-weight: 400;
+  color: var(--ink-soft);
+}
+
+/* Status select — flush/minimal, matches reference's plain-text status look */
+body.dark-theme .status-select {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--ink);
+  padding: 5px 8px;
+}
+
+body.dark-theme .status-select:hover,
+body.dark-theme .status-select:focus {
+  border-color: var(--border);
+  background: var(--bg-alt);
+}
+
+body.dark-theme .card-action-btn {
+  color: var(--ink-soft);
+  opacity: 1;
+}
+
+body.dark-theme .card-action-btn:hover {
+  color: var(--accent);
+}
+
+body.dark-theme .touched-counter {
+  background: var(--accent-soft);
+  color: #a5b2ff;
+}
+
+body.dark-theme .empty-state {
+  color: var(--ink-soft);
+  padding: 24px;
+  text-align: center;
+  display: block;
+}
+
+/* Modal stays legible on dark */
+body.dark-theme .modal-form input,
+body.dark-theme .modal-form select,
+body.dark-theme .modal-form textarea {
+  background: var(--bg-alt);
+  border-color: var(--border);
+  color: var(--ink);
+}
+
+body.dark-theme .modal-close {
+  color: var(--ink-soft);
+}
+
+/* Mobile */
+@media (max-width: 720px) {
+  .kanban-toolbar h1 {
+    font-size: 1.4rem;
+  }
+
+  /* Hide secondary columns (Contact, Created) — Company/Actions/Status/Trigger
+     stay visible; full record is one tap away via the edit modal. */
+  .kanban-table th:nth-child(3),
+  .kanban-table td:nth-child(3),
+  .kanban-table th:nth-child(6),
+  .kanban-table td:nth-child(6) {
+    display: none;
+  }
+
+  .kanban-table th,
+  .kanban-table td {
+    padding: 10px;
+    font-size: 0.85rem;
+  }
+
+  .company-avatar {
+    width: 22px;
+    height: 22px;
+    font-size: 0.65rem;
+  }
+
+  .company-subtitle {
+    font-size: 0.7rem;
+  }
+
+  .card-actions {
+    gap: 10px;
+  }
+
+  .modal {
+    padding: 20px;
+  }
+}
