@@ -71,6 +71,12 @@ body.dark-theme .kanban-table tbody tr:hover {
   color: #fff;
 }
 
+img.company-avatar {
+  object-fit: contain;
+  background: #fff;
+  padding: 3px;
+}
+
 .company-name-block {
   display: flex;
   flex-direction: column;

@@ -17,6 +17,7 @@
       <nav class="site-nav">
         <a href="index.html">Home</a>
         <a href="about.html">About</a>
+        <a href="board.html" class="active">Board</a>
         <a href="get-in-touch.html" class="nav-cta-secondary">Contact</a>
         <a href="contact.html" class="nav-cta">Try it free</a>
       </nav>
@@ -53,7 +54,7 @@
 
   <footer class="site">
     <div class="wrap">
-      &copy; 2026 Cameron Dowd — Sonar
+      &copy; 2026 Cameron Dowd — Sonar · Logos via <a href="https://logos.apistemic.com" style="color:inherit;">apistemic</a>
     </div>
   </footer>
 
@@ -182,6 +183,16 @@
       return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     }
 
+    function extractDomain(website) {
+      if (!website) return null;
+      try {
+        const url = website.trim().startsWith('http') ? website.trim() : `https://${website.trim()}`;
+        return new URL(url).hostname.replace(/^www\./, '');
+      } catch {
+        return null;
+      }
+    }
+
     function avatarColor(name) {
       let hash = 0;
       for (let i = 0; i < (name || '').length; i++) {
@@ -299,11 +310,15 @@
       ).join('');
 
       const initial = (row.name || '?').charAt(0).toUpperCase();
+      const domain = extractDomain(row.website);
+      const avatarHtml = domain
+        ? `<img class="company-avatar company-logo" src="https://logos-api.apistemic.com/domain:${domain}" alt="" data-fallback-color="${avatarColor(row.name)}" data-fallback-initial="${initial}">`
+        : `<div class="company-avatar" style="background:${avatarColor(row.name)}">${initial}</div>`;
 
       tr.innerHTML = `
         <td>
           <div class="company-cell">
-            <div class="company-avatar" style="background:${avatarColor(row.name)}">${initial}</div>
+            ${avatarHtml}
             <div class="company-name-block">
               <span>${row.name}</span>
               <span class="company-subtitle">${row.territory || ''} · ${row.industry || ''}</span>
@@ -311,9 +326,15 @@
           </div>
         </td>
         <td>
-          <div class="card-actions">
-            <a class="card-action-btn" href="tel:${row.contact_phone}" title="Call ${row.contact_name}" data-touch="1">📞</a>
-            <a class="card-action-btn" href="mailto:${row.contact_email}" title="Email ${row.contact_name}" data-touch="1">✉️</a>
+          <div class="card-actions-wrap">
+            <div class="card-actions">
+              <button type="button" class="card-action-btn reveal-toggle" title="Show contact info">📞</button>
+              <button type="button" class="card-action-btn reveal-toggle" title="Show contact info">✉️</button>
+            </div>
+            <div class="revealed-contact" hidden>
+              <a class="revealed-pill" href="tel:${row.contact_phone}" data-touch="1">📞 ${row.contact_phone}</a>
+              <a class="revealed-pill" href="mailto:${row.contact_email}" data-touch="1">✉️ ${row.contact_email}</a>
+            </div>
           </div>
         </td>
         <td>${row.contact_name || ''}</td>
@@ -322,8 +343,16 @@
         <td>${formatDate(row.created_at)}</td>
       `;
 
-      tr.querySelectorAll('[data-touch]').forEach(btn => {
+      const revealedContact = tr.querySelector('.revealed-contact');
+      tr.querySelectorAll('.reveal-toggle').forEach(btn => {
         btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          revealedContact.hidden = !revealedContact.hidden;
+        });
+      });
+
+      tr.querySelectorAll('[data-touch]').forEach(link => {
+        link.addEventListener('click', (e) => {
           e.stopPropagation();
           bumpTouchedCount();
         });
@@ -341,6 +370,17 @@
       });
 
       tr.addEventListener('click', () => openModal('edit', row));
+
+      const logoImg = tr.querySelector('.company-logo');
+      if (logoImg) {
+        logoImg.addEventListener('error', () => {
+          const fallback = document.createElement('div');
+          fallback.className = 'company-avatar';
+          fallback.style.background = logoImg.dataset.fallbackColor;
+          fallback.textContent = logoImg.dataset.fallbackInitial;
+          logoImg.replaceWith(fallback);
+        }, { once: true });
+      }
 
       return tr;
     }
