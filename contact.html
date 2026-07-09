@@ -140,8 +140,38 @@
     </div>
   </footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="config.js"></script>
   <script src="data.js"></script>
   <script>
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    async function fetchRealMatches(territory, industry, title) {
+      let query = supabaseClient.from('accounts').select('*');
+      if (territory) query = query.eq('territory', territory);
+      if (industry) query = query.eq('industry', industry);
+      if (title) query = query.eq('contact_title', title);
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Supabase fetch error:', error);
+        return [];
+      }
+
+      return data.map(row => ({
+        company: row.name,
+        territory: row.territory,
+        industry: row.industry,
+        size: `${row.size} employees`,
+        trigger: row.buying_triggers || row.trigger_type || '',
+        contact: row.contact_name,
+        title: row.contact_title,
+        phone: row.contact_phone,
+        email: row.contact_email,
+      }));
+    }
+
     const resultsEl = document.getElementById('results');
     const belowResultsEl = document.getElementById('belowResults');
     const tokenBarEl = document.getElementById('tokenBar');
@@ -234,18 +264,20 @@
       belowResultsEl.hidden = false;
     }
 
-    document.getElementById('showMatches').addEventListener('click', () => {
+    document.getElementById('showMatches').addEventListener('click', async () => {
       const territory = document.getElementById('territory').value;
       const industry = document.getElementById('industry').value;
       const title = document.getElementById('title').value;
 
-      const matches = SAMPLE_MATCHES.filter(m => {
+      const fakeMatches = SAMPLE_MATCHES.filter(m => {
         return (!territory || m.territory === territory)
           && (!industry || m.industry === industry)
           && (!title || m.title === title);
       });
 
-      renderResults(matches);
+      const realMatches = await fetchRealMatches(territory, industry, title);
+
+      renderResults([...realMatches, ...fakeMatches]);
     });
   </script>
 
