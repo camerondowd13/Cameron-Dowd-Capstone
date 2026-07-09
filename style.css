@@ -732,6 +732,23 @@ nav.site-nav a.nav-cta-secondary:hover {
   margin-top: 14px;
 }
 
+.form-status {
+  margin-top: 14px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+}
+
+.form-status-success {
+  background: var(--accent-soft);
+  color: var(--accent2-dark);
+}
+
+.form-status-error {
+  background: rgba(239, 68, 68, 0.14);
+  color: #f87171;
+}
+
 /* Token bar */
 .token-bar {
   display: flex;

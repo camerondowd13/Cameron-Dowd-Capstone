@@ -49,8 +49,9 @@
           <textarea id="message" name="message" rows="5" required></textarea>
         </div>
 
-        <button class="btn" type="submit">Send message</button>
-        <span class="note">Opens your email client with this pre-filled — nothing is sent from this page directly.</span>
+        <button class="btn" type="submit" id="submitBtn">Send message</button>
+        <span class="note">Sent directly to Cameron — no email client needed.</span>
+        <p class="form-status" id="formStatus" hidden></p>
       </form>
 
       <p class="fallback">Prefer to email directly? <a href="mailto:you@example.com">you@example.com</a> <em>(placeholder — swap before launch)</em></p>
@@ -63,21 +64,48 @@
     </div>
   </footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="config.js"></script>
   <script>
-    document.getElementById('contactForm').addEventListener('submit', function (e) {
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const formEl = document.getElementById('contactForm');
+    const statusEl = document.getElementById('formStatus');
+    const submitBtn = document.getElementById('submitBtn');
+
+    formEl.addEventListener('submit', async function (e) {
       e.preventDefault();
 
-      const name = document.getElementById('name').value;
-      const email = document.getElementById('email').value;
-      const company = document.getElementById('company').value;
-      const message = document.getElementById('message').value;
+      const name = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const company = document.getElementById('company').value.trim();
+      const message = document.getElementById('message').value.trim();
 
-      const subject = encodeURIComponent(`Get in touch — ${name}${company ? ' (' + company + ')' : ''}`);
-      const body = encodeURIComponent(
-        `Name: ${name}\nEmail: ${email}\nCompany: ${company || 'n/a'}\n\n${message}`
-      );
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Sending…';
+      statusEl.hidden = true;
 
-      window.location.href = `mailto:you@example.com?subject=${subject}&body=${body}`;
+      const { error } = await supabaseClient.from('leads').insert({
+        name,
+        email,
+        company: company || null,
+        message,
+      });
+
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Send message';
+
+      if (error) {
+        statusEl.textContent = "Something went wrong — please email me directly instead (see below).";
+        statusEl.className = 'form-status form-status-error';
+        statusEl.hidden = false;
+        return;
+      }
+
+      formEl.reset();
+      statusEl.textContent = "Thanks — I've got your message and will get back to you directly.";
+      statusEl.className = 'form-status form-status-success';
+      statusEl.hidden = false;
     });
   </script>
 
