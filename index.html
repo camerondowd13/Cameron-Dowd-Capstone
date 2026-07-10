@@ -5,10 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>We find them. You close them. — Sonar</title>
   <meta name="description" content="An AI prospecting engine that hands AEs and SDRs verified, ICP-fit companies with fully-contactable decision-makers.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
 </head>
 <body>
+
+  <canvas id="bgConstellation" aria-hidden="true"></canvas>
 
   <header class="site">
     <div class="wrap">
@@ -16,39 +21,44 @@
       <nav class="site-nav">
         <a href="index.html" class="active">Home</a>
         <a href="about.html">About</a>
-        <a href="get-in-touch.html" class="nav-cta-secondary">Contact</a>
+        <a href="get-in-touch.html">Contact</a>
         <a href="board.html">Board</a>
         <a href="contact.html" class="nav-cta">Try it free</a>
       </nav>
     </div>
   </header>
 
+  <div class="radar-zone">
+  <div class="mascot-bg-glow" id="radarGlow" aria-hidden="true"></div>
+  <svg class="mascot-rings" id="radarRings" viewBox="0 0 100 100" aria-hidden="true">
+    <circle cx="50" cy="50" r="0" fill="none" stroke="#5eead4" stroke-width="1.5" opacity="0.3"/>
+    <circle cx="50" cy="50" r="0" fill="none" stroke="#5eead4" stroke-width="1.5" opacity="0.25"/>
+    <circle cx="50" cy="50" r="0" fill="none" stroke="#5eead4" stroke-width="1.5" opacity="0.2"/>
+    <circle cx="50" cy="50" r="0" fill="none" stroke="#5eead4" stroke-width="1.5" opacity="0.15"/>
+    <circle class="mascot-ring-ping" cx="50" cy="50" r="0" fill="none" stroke="#5eead4" stroke-width="2"/>
+    <circle class="mascot-ring-ping mascot-ring-ping-delay" cx="50" cy="50" r="0" fill="none" stroke="#5eead4" stroke-width="2"/>
+  </svg>
+
   <section class="hero">
-    <div class="blob-3" aria-hidden="true"></div>
-    <div class="blob-side blob-side-left" aria-hidden="true"></div>
-    <div class="blob-side blob-side-right" aria-hidden="true"></div>
-    <div class="blob-purple-2" aria-hidden="true"></div>
     <div class="wrap hero-wrap">
       <svg class="hero-sonar-bg" viewBox="0 0 600 400" aria-hidden="true">
         <defs>
           <radialGradient id="sonarGlow" cx="50%" cy="100%" r="90%">
-            <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.30"/>
+            <stop offset="0%" stop-color="#14b8a6" stop-opacity="0.28"/>
             <stop offset="55%" stop-color="#0d9488" stop-opacity="0.14"/>
             <stop offset="100%" stop-color="#0d9488" stop-opacity="0"/>
           </radialGradient>
           <linearGradient id="sonarSweepGradient" x1="300" y1="380" x2="300" y2="40" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="#f0abfc" stop-opacity="0"/>
-            <stop offset="55%" stop-color="#f0abfc" stop-opacity="0.45"/>
-            <stop offset="100%" stop-color="#f0abfc" stop-opacity="0"/>
+            <stop offset="0%" stop-color="#5eead4" stop-opacity="0"/>
+            <stop offset="55%" stop-color="#5eead4" stop-opacity="0.45"/>
+            <stop offset="100%" stop-color="#5eead4" stop-opacity="0"/>
           </linearGradient>
+          <filter id="softGlowBlur" x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="22"/>
+          </filter>
         </defs>
 
-        <path d="M300,380 L21,185 A340,340 0 0,1 579,185 Z" fill="url(#sonarGlow)"/>
-
-        <path d="M210,317 A110,110 0 0,1 390,317" fill="none" stroke="#c4b5fd" stroke-width="1.5" opacity="0.3"/>
-        <path d="M160.8,282.4 A170,170 0 0,1 439.2,282.4" fill="none" stroke="#c4b5fd" stroke-width="1.5" opacity="0.25"/>
-        <path d="M111.6,248 A230,230 0 0,1 488.4,248" fill="none" stroke="#c4b5fd" stroke-width="1.5" opacity="0.2"/>
-        <path d="M62.5,213.5 A290,290 0 0,1 537.5,213.5" fill="none" stroke="#c4b5fd" stroke-width="1.5" opacity="0.15"/>
+        <path d="M300,380 L21,185 A340,340 0 0,1 579,185 Z" fill="url(#sonarGlow)" filter="url(#softGlowBlur)"/>
 
         <g class="sonar-sweep">
           <path d="M300,380 L255.6,42.9 A340,340 0 0,1 344.4,42.9 Z" fill="url(#sonarSweepGradient)"/>
@@ -106,61 +116,117 @@
     </div>
   </section>
 
+  <div class="section-bridge" aria-hidden="true"></div>
+
   <section class="mascot-section">
     <div class="wrap mascot-wrap">
-      <div class="find-card find-card-left">
-        <span class="find-badge">✓ Match found</span>
-        <div class="find-name">Crestview Education Partners</div>
-        <div class="find-meta">North Carolina · Education · CFO</div>
-      </div>
       <svg class="mascot-illustration" viewBox="0 0 400 420" width="260" height="273" aria-hidden="true">
-        <rect x="70" y="190" width="260" height="230" rx="50" fill="#0d9488"/>
-        <circle cx="200" cy="280" r="22" fill="#7c3aed"/>
-        <circle cx="200" cy="280" r="10" fill="#e6dcfc"/>
+        <defs>
+          <linearGradient id="botBody" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#0f766e"/>
+            <stop offset="100%" stop-color="#0c4a45"/>
+          </linearGradient>
+          <linearGradient id="botHead" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#8b5cf6"/>
+            <stop offset="100%" stop-color="#5b21b6"/>
+          </linearGradient>
+          <linearGradient id="botScreen" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#241c38"/>
+            <stop offset="100%" stop-color="#120e1e"/>
+          </linearGradient>
+          <radialGradient id="botCore">
+            <stop offset="0%" stop-color="#e9d5ff"/>
+            <stop offset="40%" stop-color="#a78bfa"/>
+            <stop offset="100%" stop-color="#6d28d9"/>
+          </radialGradient>
+          <radialGradient id="eyeGlow">
+            <stop offset="0%" stop-color="#99f6e4"/>
+            <stop offset="60%" stop-color="#2dd4bf"/>
+            <stop offset="100%" stop-color="#0f766e"/>
+          </radialGradient>
+          <clipPath id="screenClip">
+            <rect x="146" y="66" width="108" height="92" rx="20"/>
+          </clipPath>
+        </defs>
+
+        <ellipse cx="200" cy="410" rx="118" ry="10" fill="#000000" opacity="0.35"/>
+
+        <rect x="70" y="190" width="260" height="230" rx="50" fill="url(#botBody)"/>
+        <rect x="71.5" y="191.5" width="257" height="227" rx="48.5" fill="none" stroke="#2dd4bf" stroke-width="2" opacity="0.3"/>
+        <path d="M100,218 Q200,198 300,218" fill="none" stroke="#5eead4" stroke-width="5" stroke-linecap="round" opacity="0.22"/>
+
+        <circle cx="200" cy="282" r="27" fill="#082f2b"/>
+        <circle cx="200" cy="282" r="22" fill="url(#botScreen)"/>
+        <circle cx="200" cy="282" r="8" fill="none" stroke="#2dd4bf" stroke-width="1" opacity="0.3"/>
+        <circle cx="200" cy="282" r="15" fill="none" stroke="#2dd4bf" stroke-width="1" opacity="0.22"/>
+        <line class="mini-sweep" x1="200" y1="282" x2="200" y2="262" stroke="#5eead4" stroke-width="2" stroke-linecap="round"/>
+        <circle class="mini-blip" cx="192" cy="290" r="2.5" fill="#5eead4"/>
+        <circle class="mini-blip" cx="209" cy="276" r="2.5" fill="#5eead4"/>
+        <circle cx="200" cy="282" r="26" fill="none" stroke="#a78bfa" stroke-width="1.5" opacity="0.4"/>
+
+        <line x1="132" y1="352" x2="268" y2="352" stroke="#082f2b" stroke-width="3" opacity="0.55" stroke-linecap="round"/>
+        <circle cx="150" cy="376" r="5" fill="#2dd4bf" opacity="0.5"/>
+        <circle cx="170" cy="376" r="5" fill="#2dd4bf" opacity="0.3"/>
+        <circle cx="190" cy="376" r="5" fill="#2dd4bf" opacity="0.15"/>
+
         <g class="mascot-scan">
-          <line x1="200" y1="50" x2="200" y2="20" stroke="#0d9488" stroke-width="6" stroke-linecap="round"/>
-          <circle class="antenna-light" cx="200" cy="14" r="8" fill="#0d9488"/>
-          <path d="M120,220 L95,150 L150,112" fill="none" stroke="#0d9488" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M280,220 L305,150 L250,112" fill="none" stroke="#0d9488" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
-          <rect x="130" y="50" width="140" height="130" rx="36" fill="#7c3aed"/>
-          <rect x="150" y="75" width="100" height="75" rx="20" fill="#f0eafc"/>
-          <path d="M175,128 Q200,144 225,128" fill="none" stroke="#0d9488" stroke-width="6" stroke-linecap="round"/>
-          <circle cx="150" cy="112" r="17" fill="#0b7a70"/>
-          <circle cx="250" cy="112" r="17" fill="#0b7a70"/>
-          <circle class="radar-ping" cx="200" cy="106" r="40" fill="none" stroke="#0d9488" stroke-width="3"/>
-          <circle class="radar-ping radar-ping-delay" cx="200" cy="106" r="40" fill="none" stroke="#0d9488" stroke-width="3"/>
-          <circle class="radar-ping radar-ping-delay-2" cx="200" cy="106" r="40" fill="none" stroke="#0d9488" stroke-width="3"/>
-          <rect x="195" y="96" width="10" height="20" fill="#3a3159"/>
-          <circle cx="175" cy="106" r="38" fill="#3a3159"/>
-          <circle cx="225" cy="106" r="38" fill="#3a3159"/>
-          <circle cx="175" cy="106" r="24" fill="#cbd5e1"/>
-          <circle cx="225" cy="106" r="24" fill="#cbd5e1"/>
-          <circle cx="167" cy="98" r="7" fill="#f1f5f9"/>
-          <circle cx="217" cy="98" r="7" fill="#f1f5f9"/>
+          <line x1="200" y1="52" x2="200" y2="38" stroke="#2dd4bf" stroke-width="6" stroke-linecap="round"/>
+          <g class="antenna-dish">
+            <path d="M184,31 Q200,45 216,31" fill="none" stroke="#5eead4" stroke-width="5" stroke-linecap="round"/>
+            <line x1="200" y1="36" x2="200" y2="17" stroke="#2dd4bf" stroke-width="4" stroke-linecap="round"/>
+            <circle class="antenna-light" cx="200" cy="14" r="6" fill="#5eead4"/>
+          </g>
+
+
+          <rect x="128" y="46" width="144" height="136" rx="38" fill="url(#botHead)"/>
+          <rect x="129.5" y="47.5" width="141" height="133" rx="36.5" fill="none" stroke="#c4b5fd" stroke-width="2" opacity="0.35"/>
+
+          <circle cx="146" cy="112" r="17" fill="#3b1d7a"/>
+          <circle cx="254" cy="112" r="17" fill="#3b1d7a"/>
+          <circle cx="146" cy="112" r="7" fill="#2dd4bf" opacity="0.85"/>
+          <circle cx="254" cy="112" r="7" fill="#2dd4bf" opacity="0.85"/>
+
+          <rect x="146" y="66" width="108" height="92" rx="20" fill="url(#botScreen)"/>
+          <rect x="147" y="67" width="106" height="90" rx="19" fill="none" stroke="#2dd4bf" stroke-width="1.5" opacity="0.25"/>
+
+          <circle class="radar-ping" cx="200" cy="104" r="40" fill="none" stroke="#2dd4bf" stroke-width="2"/>
+          <circle class="radar-ping radar-ping-delay" cx="200" cy="104" r="40" fill="none" stroke="#2dd4bf" stroke-width="2"/>
+          <circle class="radar-ping radar-ping-delay-2" cx="200" cy="104" r="40" fill="none" stroke="#2dd4bf" stroke-width="2"/>
+
+          <g clip-path="url(#screenClip)">
+            <rect class="scanline" x="146" y="60" width="108" height="12" fill="#2dd4bf"/>
+          </g>
+
+          <g class="eye-blink">
+            <circle class="eye-iris" cx="177" cy="102" r="18" fill="url(#eyeGlow)" opacity="0.95"/>
+            <circle class="eye-iris" cx="223" cy="102" r="18" fill="url(#eyeGlow)" opacity="0.95"/>
+            <circle class="eye-pupil" cx="177" cy="102" r="7.5" fill="#f0fdfa"/>
+            <circle class="eye-pupil" cx="223" cy="102" r="7.5" fill="#f0fdfa"/>
+            <circle class="eye-glint" cx="172" cy="97" r="3" fill="#ffffff"/>
+            <circle class="eye-glint" cx="218" cy="97" r="3" fill="#ffffff"/>
+          </g>
+
+          <path d="M182,136 Q200,147 218,136" fill="none" stroke="#5eead4" stroke-width="5" stroke-linecap="round" opacity="0.9"/>
         </g>
       </svg>
-      <div class="find-card find-card-right">
-        <span class="find-badge">✓ Match found</span>
-        <div class="find-name">Redrock Energy Partners</div>
-        <div class="find-meta">Texas · Energy & Utilities · CFO</div>
-      </div>
     </div>
   </section>
+  </div>
 
   <section class="benefits-section">
     <div class="wrap benefits">
       <div class="benefit">
-        <div class="icon">⚡</div>
+        <div class="icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
         <h3>No more tab-hopping.</h3>
         <p>You know the drill — ZoomInfo, LinkedIn, Google, repeat. We do that part so you don't have to.</p>
       </div>
       <div class="benefit">
-        <div class="icon">✓</div>
+        <div class="icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
         <h3>Every contact is reachable. No dead ends.</h3>
         <p>A verified phone number and email, every time. If we can't reach them, they're not on your list.</p>
       </div>
       <div class="benefit">
-        <div class="icon">⏱</div>
+        <div class="icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
         <h3>Get hours back every week.</h3>
         <p>List-building shouldn't eat the time you should be spending on the phone. Turn 5–10 hours a week of research into minutes.</p>
       </div>
@@ -199,6 +265,86 @@
 
   <script>
     (function () {
+      const canvas = document.getElementById('bgConstellation');
+      const ctx = canvas.getContext('2d');
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      let particles = [];
+      let width, height;
+
+      function sizeCanvas() {
+        width = window.innerWidth;
+        height = document.documentElement.scrollHeight;
+        canvas.width = width;
+        canvas.height = height;
+      }
+
+      function initParticles() {
+        const count = Math.min(70, Math.max(30, Math.floor((width * height) / 22000)));
+        particles = Array.from({ length: count }, () => ({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          vx: (Math.random() - 0.5) * 0.15,
+          vy: (Math.random() - 0.5) * 0.15,
+        }));
+      }
+
+      function drawFrame() {
+        ctx.clearRect(0, 0, width, height);
+        const linkDist = 140;
+
+        for (let i = 0; i < particles.length; i++) {
+          const p = particles[i];
+          if (!reduceMotion) {
+            p.x += p.vx;
+            p.y += p.vy;
+            if (p.x < 0 || p.x > width) p.vx *= -1;
+            if (p.y < 0 || p.y > height) p.vy *= -1;
+            p.x = Math.max(0, Math.min(width, p.x));
+            p.y = Math.max(0, Math.min(height, p.y));
+          }
+        }
+
+        for (let i = 0; i < particles.length; i++) {
+          for (let j = i + 1; j < particles.length; j++) {
+            const a = particles[i], b = particles[j];
+            const dx = a.x - b.x, dy = a.y - b.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < linkDist) {
+              ctx.strokeStyle = 'rgba(167, 139, 250, ' + (0.14 * (1 - dist / linkDist)) + ')';
+              ctx.lineWidth = 1;
+              ctx.beginPath();
+              ctx.moveTo(a.x, a.y);
+              ctx.lineTo(b.x, b.y);
+              ctx.stroke();
+            }
+          }
+        }
+
+        for (let i = 0; i < particles.length; i++) {
+          const p = particles[i];
+          ctx.fillStyle = 'rgba(196, 181, 253, 0.5)';
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 1.6, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        if (!reduceMotion) requestAnimationFrame(drawFrame);
+      }
+
+      sizeCanvas();
+      initParticles();
+      drawFrame();
+
+      let resizeTimer;
+      window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+          sizeCanvas();
+          initParticles();
+          if (reduceMotion) drawFrame();
+        }, 200);
+      });
+
       function animateCount(el, target, duration, suffix) {
         const start = performance.now();
         function tick(now) {
@@ -213,6 +359,270 @@
       animateCount(document.getElementById('statNumber1'), 85, 1400, '%');
       setTimeout(() => animateCount(document.getElementById('statNumber2'), 50, 700, ''), 300);
       setTimeout(() => animateCount(document.getElementById('statNumber3'), 5, 700, ''), 600);
+
+      let radarGeom = null;
+
+      const radarBlips = [
+        { angle: 115, ring: 1 },
+        { angle: 124, ring: 2 },
+        { angle: 136, ring: 3 },
+        { angle: 148, ring: 3 },
+        { angle: 212, ring: 3 },
+        { angle: 224, ring: 3 },
+        { angle: 236, ring: 2 },
+        { angle: 245, ring: 1 },
+      ];
+
+      function alignRadar() {
+        const heroSvg = document.querySelector('.hero-sonar-bg');
+        const zone = document.querySelector('.radar-zone');
+        const ringsSvg = document.getElementById('radarRings');
+        const glow = document.getElementById('radarGlow');
+        if (!heroSvg || !zone || !ringsSvg || !glow) return;
+
+        let heroRect = heroSvg.getBoundingClientRect();
+        const zoneRect = zone.getBoundingClientRect();
+        if (heroRect.width === 0) return;
+
+        const scale = heroRect.width / 600;
+        let originX = heroRect.left + 300 * scale - zoneRect.left;
+        let originY = heroRect.top + 380 * scale - zoneRect.top;
+
+        const mascotEl = document.querySelector('.mascot-illustration');
+        if (mascotEl) {
+          const mRect = mascotEl.getBoundingClientRect();
+          const antennaX = mRect.left + mRect.width * (200 / 400);
+          const antennaY = mRect.top + mRect.height * (27 / 420);
+          const apexX = heroRect.left + 300 * scale;
+          const apexY = heroRect.top + 380 * scale;
+          const currentTop = parseFloat(heroSvg.style.top) || 40;
+          const currentShift = parseFloat(heroSvg.style.marginLeft) || 0;
+          heroSvg.style.top = (currentTop + (antennaY - apexY)) + 'px';
+          heroSvg.style.marginLeft = (currentShift + (antennaX - apexX)) + 'px';
+          originX = antennaX - zoneRect.left;
+          originY = antennaY - zoneRect.top;
+        }
+
+        const radii = [110, 170, 230, 290].map((r) => r * scale);
+        const maxR = radii[radii.length - 1];
+        const size = maxR * 2;
+
+        ringsSvg.style.left = originX + 'px';
+        ringsSvg.style.top = originY + 'px';
+        ringsSvg.style.width = size + 'px';
+        ringsSvg.style.height = size + 'px';
+        ringsSvg.setAttribute('viewBox', '0 0 ' + size + ' ' + size);
+
+        const staticCircles = ringsSvg.querySelectorAll('circle:not(.mascot-ring-ping)');
+        staticCircles.forEach((c, i) => {
+          c.setAttribute('cx', maxR);
+          c.setAttribute('cy', maxR);
+          c.setAttribute('r', radii[i]);
+        });
+
+        const pings = ringsSvg.querySelectorAll('.mascot-ring-ping');
+        pings.forEach((p) => {
+          p.setAttribute('cx', maxR);
+          p.setAttribute('cy', maxR);
+        });
+
+        const glowSize = radii[1] * 2;
+        glow.style.left = originX + 'px';
+        glow.style.top = originY + 'px';
+        glow.style.width = glowSize + 'px';
+        glow.style.height = glowSize + 'px';
+
+        radarGeom = { x: originX, y: originY, maxR: maxR };
+
+        radarBlips.forEach((b) => {
+          if (!b.el) {
+            b.el = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            b.el.setAttribute('class', 'radar-blip');
+            b.el.setAttribute('fill', '#5eead4');
+            b.el.setAttribute('r', '2.5');
+            b.el.addEventListener('animationend', () => b.el.classList.remove('blip-hit'));
+            ringsSvg.appendChild(b.el);
+          }
+          const rad = (b.angle * Math.PI) / 180;
+          b.el.setAttribute('cx', maxR + radii[b.ring] * Math.sin(rad));
+          b.el.setAttribute('cy', maxR - radii[b.ring] * Math.cos(rad));
+        });
+      }
+
+      alignRadar();
+      window.addEventListener('resize', alignRadar);
+      window.addEventListener('load', alignRadar);
+
+      const mascotSvg = document.querySelector('.mascot-illustration');
+      const eyeIrises = document.querySelectorAll('.eye-iris');
+      const eyePupils = document.querySelectorAll('.eye-pupil');
+      const eyeGlints = document.querySelectorAll('.eye-glint');
+      if (mascotSvg && eyePupils.length) {
+        let eyeFrame = null;
+        window.addEventListener('pointermove', (e) => {
+          if (eyeFrame) return;
+          eyeFrame = requestAnimationFrame(() => {
+            eyeFrame = null;
+            const rect = mascotSvg.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height * 0.28;
+            const dx = e.clientX - cx;
+            const dy = e.clientY - cy;
+            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+            const pull = Math.min(8, dist / 30);
+            const ox = (dx / dist) * pull;
+            const oy = (dy / dist) * pull;
+            eyeIrises.forEach((el) => {
+              el.style.transform = 'translate(' + ox + 'px, ' + oy + 'px)';
+            });
+            eyePupils.forEach((el) => {
+              el.style.transform = 'translate(' + ox * 1.5 + 'px, ' + oy * 1.5 + 'px)';
+            });
+            eyeGlints.forEach((el) => {
+              el.style.transform = 'translate(' + ox * 0.3 + 'px, ' + oy * 0.3 + 'px)';
+            });
+          });
+        });
+      }
+
+      const matchPool = [
+        { name: 'Tidewater Health Partners', meta: 'Virginia · Healthcare · CEO' },
+        { name: 'Sunbelt Fabrication Co.', meta: 'Florida · Manufacturing · CFO' },
+        { name: 'Crestview Education Partners', meta: 'North Carolina · Education · CFO' },
+        { name: 'Redrock Energy Partners', meta: 'Texas · Energy & Utilities · CFO' },
+        { name: 'Bluegrass Logistics Group', meta: 'Kentucky · Transportation · COO' },
+        { name: 'Harborline Marine Services', meta: 'Maryland · Marine · CEO' },
+        { name: 'Summit Peak Outfitters', meta: 'Colorado · Retail · CFO' },
+      ];
+      let matchIndex = 0;
+      let lastCardAt = 0;
+      const radarZone = document.querySelector('.radar-zone');
+
+      function streamParticles(bx, by) {
+        if (!radarGeom || !radarZone || !('animate' in Element.prototype)) return;
+        const dx = radarGeom.x - bx;
+        const dy = radarGeom.y - by;
+        const mx = dx * 0.5 - dy * 0.18;
+        const my = dy * 0.5 + dx * 0.18;
+        for (let i = 0; i < 3; i++) {
+          const p = document.createElement('div');
+          p.className = 'data-particle';
+          p.style.left = bx + 'px';
+          p.style.top = by + 'px';
+          radarZone.appendChild(p);
+          p.animate([
+            { transform: 'translate(0, 0) scale(1)', opacity: 0.9 },
+            { transform: 'translate(' + mx + 'px, ' + my + 'px) scale(0.8)', opacity: 0.8 },
+            { transform: 'translate(' + dx + 'px, ' + dy + 'px) scale(0.4)', opacity: 0 },
+          ], { duration: 700, delay: 250 + i * 150, easing: 'ease-in', fill: 'forwards' });
+          setTimeout(() => p.remove(), 1200 + i * 150);
+        }
+      }
+
+      function spawnMatchCard(blip) {
+        if (!radarGeom || !radarZone || window.innerWidth < 900) return;
+        const bx = radarGeom.x - radarGeom.maxR + parseFloat(blip.el.getAttribute('cx'));
+        const by = radarGeom.y - radarGeom.maxR + parseFloat(blip.el.getAttribute('cy'));
+
+        const match = matchPool[matchIndex % matchPool.length];
+        matchIndex++;
+
+        const card = document.createElement('div');
+        card.className = 'blip-card';
+        card.innerHTML = '<div class="holo-title">Match found</div>' +
+          '<div class="holo-name"></div>' +
+          '<div class="holo-row"><span class="holo-dot"></span>Phone verified</div>' +
+          '<div class="holo-row"><span class="holo-dot"></span>Email verified</div>' +
+          '<div class="holo-row"><span class="holo-dot"></span>Synced to CRM</div>';
+        card.querySelector('.holo-name').textContent = match.name;
+        card.querySelectorAll('.holo-row').forEach((row, i) => {
+          setTimeout(() => row.classList.add('done'), 700 + i * 300);
+        });
+
+        const onLeftSide = blip.angle > 180;
+        card.style.left = (onLeftSide ? bx - 214 : bx + 14) + 'px';
+        card.classList.add(onLeftSide ? 'from-right' : 'from-left');
+        radarZone.appendChild(card);
+
+        const cardH = card.offsetHeight || 96;
+        let top = by - 30;
+        const maxTop = radarZone.offsetHeight - cardH - 12;
+        if (top > maxTop) top = maxTop;
+        const anchorY = Math.max(10, Math.min(cardH - 10, by - top));
+        card.style.top = top + 'px';
+        card.style.transformOrigin = (onLeftSide ? '100% ' : '0% ') + anchorY + 'px';
+        card.style.setProperty('--stem-y', anchorY + 'px');
+
+        setTimeout(() => card.classList.add('show'), 160);
+        setTimeout(() => card.classList.remove('show'), 3200);
+        setTimeout(() => card.remove(), 3600);
+
+        streamParticles(bx, by);
+
+        const mascot = document.querySelector('.mascot-illustration');
+        if (mascot) {
+          setTimeout(() => {
+            mascot.classList.add('match-flash');
+            setTimeout(() => mascot.classList.remove('match-flash'), 700);
+          }, 700);
+        }
+      }
+
+      if (!reduceMotion) {
+        const sweepPeriod = 5000;
+        const sweepStart = performance.now();
+        function blipLoop(now) {
+          const phase = ((now - sweepStart) % sweepPeriod) / sweepPeriod;
+          const beamAngle = phase * 360;
+          radarBlips.forEach((b) => {
+            if (!b.el) return;
+            const rawDiff = Math.abs(beamAngle - b.angle);
+            const angDiff = Math.min(rawDiff, 360 - rawDiff);
+            if (angDiff < 4 && (!b.lastHit || now - b.lastHit > 1500)) {
+              b.lastHit = now;
+              b.el.classList.add('blip-hit');
+              if (now - lastCardAt > 2200) {
+                lastCardAt = now;
+                spawnMatchCard(b);
+              }
+            }
+          });
+          requestAnimationFrame(blipLoop);
+        }
+        requestAnimationFrame(blipLoop);
+      }
+
+      if (!reduceMotion && 'IntersectionObserver' in window) {
+        const groups = [
+          document.querySelectorAll('.benefit'),
+          document.querySelectorAll('.faq-section h2'),
+          document.querySelectorAll('.faq-item'),
+        ];
+
+        groups.forEach((group) => {
+          group.forEach((el, i) => {
+            el.classList.add('reveal-on-scroll');
+            el.style.setProperty('--reveal-delay', (i * 0.12) + 's');
+          });
+        });
+
+        const revealObserver = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            const el = entry.target;
+            el.classList.add('revealed');
+            revealObserver.unobserve(el);
+            el.addEventListener('transitionend', function done(e) {
+              if (e.propertyName !== 'transform') return;
+              el.classList.remove('reveal-on-scroll', 'revealed');
+              el.style.removeProperty('--reveal-delay');
+              el.removeEventListener('transitionend', done);
+            });
+          });
+        }, { threshold: 0.15 });
+
+        document.querySelectorAll('.reveal-on-scroll').forEach((el) => revealObserver.observe(el));
+      }
     })();
   </script>
 
