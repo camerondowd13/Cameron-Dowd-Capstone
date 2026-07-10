@@ -88,6 +88,18 @@ img.company-avatar {
   color: var(--ink);
 }
 
+.company-link {
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: none;
+  width: fit-content;
+}
+
+.company-link:hover {
+  color: #5eead4;
+  text-decoration: underline;
+}
+
 .company-subtitle {
   font-size: 0.76rem;
   font-weight: 400;

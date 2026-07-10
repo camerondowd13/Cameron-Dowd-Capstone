@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Outreach Board — Sonar</title>
-  <meta name="description" content="Kanban-style triage board for prospecting outreach, backed by live Supabase data.">
+  <title>Outreach Board (Example) — Sonar</title>
+  <meta name="description" content="An example of the outreach board Sonar gives you — every account tracked from match to close.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
@@ -23,7 +23,8 @@
       <nav class="site-nav">
         <a href="index.html">Home</a>
         <a href="about.html">About</a>
-        <a href="board.html" class="active">Board</a>
+        <a href="dashboard.html">Example Dashboard</a>
+        <a href="board.html" class="active">Example Board</a>
         <a href="get-in-touch.html">Contact</a>
         <a href="contact.html" class="nav-cta">Try it free</a>
       </nav>
@@ -32,10 +33,15 @@
 
   <section class="section section-decor">
     <div class="wrap">
+      <div class="example-banner">
+        <span class="eyebrow" style="margin:0;">Example</span>
+        <p>This is what your outreach board looks like inside Sonar — every account tracked from first match to closed deal, with verification status visible at a glance. The data below is sample, but the layout and workflow are real.</p>
+      </div>
       <div class="kanban-toolbar">
-        <h1 style="margin:0;">Outreach board</h1>
+        <h1 style="margin:0;">Example outreach board</h1>
         <div style="display:flex; align-items:center; gap:14px;">
           <span class="touched-counter" id="touchedCounter">0 outreach actions today</span>
+          <button class="btn btn-secondary" id="exportCsvBtn">Export CSV</button>
           <button class="btn" id="addAccountBtn">+ Add</button>
         </div>
       </div>
@@ -49,6 +55,7 @@
               <th data-key="contact_name">Contact</th>
               <th data-key="status">Status</th>
               <th data-key="trigger_type">Trigger</th>
+              <th>Verified</th>
               <th data-key="created_at">Created</th>
             </tr>
           </thead>
@@ -59,7 +66,29 @@
   </section>
 
   <footer class="site">
-    <div class="wrap">
+    <div class="wrap footer-grid">
+      <div class="footer-brand">
+        <a class="logo" href="index.html"><svg class="logo-mark" viewBox="0 0 64 64" width="24" height="24"><rect width="64" height="64" rx="16" fill="#7c3aed"/><circle cx="32" cy="32" r="4" fill="white"/><circle cx="32" cy="32" r="13" fill="none" stroke="white" stroke-width="3" opacity="0.85"/><circle cx="32" cy="32" r="22" fill="none" stroke="white" stroke-width="3" opacity="0.5"/></svg>Sonar</a>
+        <p class="footer-tagline">AI prospecting copilot for AEs and BDRs — verified companies and contacts, ready to call.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Product</h4>
+        <a href="index.html">Home</a>
+        <a href="contact.html">Try it free</a>
+        <a href="get-in-touch.html">Get in touch</a>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a href="about.html">About</a>
+        <a href="get-in-touch.html">Contact</a>
+      </div>
+      <div class="footer-col">
+        <h4>Legal</h4>
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="terms.html">Terms of Service</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
       &copy; 2026 Cameron Dowd — Sonar · Logos via <a href="https://logos.apistemic.com" style="color:inherit;">apistemic</a>
     </div>
   </footer>
@@ -128,6 +157,14 @@
         <div class="field">
           <label for="f_contact_email">Contact email *</label>
           <input type="email" id="f_contact_email" required>
+        </div>
+        <div class="field" style="display:flex; gap:20px;">
+          <label style="display:flex; align-items:center; gap:6px; font-weight:500;">
+            <input type="checkbox" id="f_phone_verified" style="width:auto;"> Phone verified
+          </label>
+          <label style="display:flex; align-items:center; gap:6px; font-weight:500;">
+            <input type="checkbox" id="f_email_verified" style="width:auto;"> Email verified
+          </label>
         </div>
         <div class="field">
           <label for="f_website">Website</label>
@@ -245,7 +282,7 @@
     async function loadAccounts() {
       const { data, error } = await supabaseClient.from('accounts').select('*').eq('archived', false);
       if (error) {
-        tableBodyEl.innerHTML = `<tr><td colspan="6"><p class="empty-state">Error loading accounts: ${error.message}</p></td></tr>`;
+        tableBodyEl.innerHTML = `<tr><td colspan="7"><p class="empty-state">Error loading accounts: ${error.message}</p></td></tr>`;
         return;
       }
       accounts = data || [];
@@ -296,7 +333,7 @@
       const rows = sortedAccounts();
 
       if (rows.length === 0) {
-        tableBodyEl.innerHTML = '<tr><td colspan="6"><p class="empty-state">Table is empty. Add rows to see them here.</p></td></tr>';
+        tableBodyEl.innerHTML = '<tr><td colspan="7"><p class="empty-state">Table is empty. Add rows to see them here.</p></td></tr>';
         return;
       }
 
@@ -321,17 +358,13 @@
         ? `<img class="company-avatar company-logo" src="https://logos-api.apistemic.com/domain:${domain}" alt="" data-fallback-color="${avatarColor(row.name)}" data-fallback-initial="${initial}">`
         : `<div class="company-avatar" style="background:${avatarColor(row.name)}">${initial}</div>`;
 
-      tr.innerHTML = `
-        <td>
-          <div class="company-cell">
-            ${avatarHtml}
-            <div class="company-name-block">
-              <span>${row.name}</span>
-              <span class="company-subtitle">${row.territory || ''} · ${row.industry || ''}</span>
-            </div>
-          </div>
-        </td>
-        <td>
+      const isApproved = row.phone_verified && row.email_verified;
+      const verifyBadge = isApproved
+        ? '<span class="verify-badge">✓ verified</span>'
+        : '<span class="verify-badge verify-badge-pending">unverified</span>';
+
+      const actionsCell = isApproved
+        ? `
           <div class="card-actions-wrap">
             <div class="card-actions">
               <button type="button" class="card-action-btn reveal-toggle" title="Show contact info">📞</button>
@@ -342,12 +375,29 @@
               <a class="revealed-pill" href="mailto:${row.contact_email}" data-touch="1">✉️ ${row.contact_email}</a>
             </div>
           </div>
+        `
+        : '<span class="fallback">Awaiting verification</span>';
+
+      tr.innerHTML = `
+        <td>
+          <div class="company-cell">
+            ${avatarHtml}
+            <div class="company-name-block">
+              <a class="company-link" href="account.html?id=${row.id}">${row.name}</a>
+              <span class="company-subtitle">${row.territory || ''} · ${row.industry || ''}</span>
+            </div>
+          </div>
         </td>
+        <td>${actionsCell}</td>
         <td>${row.contact_name || ''}</td>
         <td><select class="status-select">${statusOptions}</select></td>
         <td>${triggerLabel}</td>
+        <td>${verifyBadge}</td>
         <td>${formatDate(row.created_at)}</td>
       `;
+
+      const companyLink = tr.querySelector('.company-link');
+      if (companyLink) companyLink.addEventListener('click', (e) => e.stopPropagation());
 
       const revealedContact = tr.querySelector('.revealed-contact');
       tr.querySelectorAll('.reveal-toggle').forEach(btn => {
@@ -410,6 +460,8 @@
         document.getElementById('f_contact_title').value = row.contact_title || '';
         document.getElementById('f_contact_phone').value = row.contact_phone || '';
         document.getElementById('f_contact_email').value = row.contact_email || '';
+        document.getElementById('f_phone_verified').checked = !!row.phone_verified;
+        document.getElementById('f_email_verified').checked = !!row.email_verified;
         document.getElementById('f_website').value = row.website || '';
         document.getElementById('f_linkedin_url').value = row.linkedin_url || '';
         document.getElementById('f_icp_fit_score').value = row.icp_fit_score ?? '';
@@ -453,6 +505,10 @@
       e.preventDefault();
       modalErrorEl.hidden = true;
 
+      const phoneVerified = document.getElementById('f_phone_verified').checked;
+      const emailVerified = document.getElementById('f_email_verified').checked;
+      const prevRow = editingId ? accounts.find(a => a.id === editingId) : null;
+
       const payload = {
         name: document.getElementById('f_name').value.trim(),
         territory: document.getElementById('f_territory').value.trim(),
@@ -465,6 +521,14 @@
         contact_title: document.getElementById('f_contact_title').value.trim(),
         contact_phone: document.getElementById('f_contact_phone').value.trim(),
         contact_email: document.getElementById('f_contact_email').value.trim(),
+        phone_verified: phoneVerified,
+        email_verified: emailVerified,
+        phone_verified_at: phoneVerified
+          ? (prevRow && prevRow.phone_verified ? prevRow.phone_verified_at : new Date().toISOString())
+          : null,
+        email_verified_at: emailVerified
+          ? (prevRow && prevRow.email_verified ? prevRow.email_verified_at : new Date().toISOString())
+          : null,
         website: document.getElementById('f_website').value.trim() || null,
         linkedin_url: document.getElementById('f_linkedin_url').value.trim() || null,
         icp_fit_score: document.getElementById('f_icp_fit_score').value
@@ -491,6 +555,57 @@
 
       closeModal();
       loadAccounts();
+    });
+
+    // ---------- CSV export ----------
+    function csvCell(value) {
+      const str = value === null || value === undefined ? '' : String(value);
+      if (/[",\n]/.test(str)) {
+        return '"' + str.replace(/"/g, '""') + '"';
+      }
+      return str;
+    }
+
+    document.getElementById('exportCsvBtn').addEventListener('click', () => {
+      const rows = sortedAccounts();
+      if (rows.length === 0) {
+        alert('No accounts to export.');
+        return;
+      }
+
+      const columns = [
+        ['name', 'Company'],
+        ['website', 'Website'],
+        ['territory', 'Territory'],
+        ['industry', 'Industry'],
+        ['size', 'Company Size'],
+        ['status', 'Status'],
+        ['trigger_type', 'Trigger Type'],
+        ['buying_triggers', 'Trigger Details'],
+        ['contact_name', 'Contact Name'],
+        ['contact_title', 'Contact Title'],
+        ['contact_phone', 'Contact Phone'],
+        ['contact_email', 'Contact Email'],
+        ['phone_verified', 'Phone Verified'],
+        ['email_verified', 'Email Verified'],
+        ['icp_fit_score', 'ICP Fit Score'],
+        ['priority', 'Priority'],
+        ['created_at', 'Created At'],
+      ];
+
+      const header = columns.map(c => csvCell(c[1])).join(',');
+      const lines = rows.map(row => columns.map(c => csvCell(row[c[0]])).join(','));
+      const csv = [header, ...lines].join('\n');
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `sonar-board-${todayKey()}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
     });
 
     // ---------- Live sync (Supabase Realtime) ----------

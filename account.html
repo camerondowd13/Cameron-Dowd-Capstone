@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Account — Sonar</title>
+  <meta name="description" content="Company and contact profile.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+</head>
+<body>
+
+  <canvas id="bgConstellation" aria-hidden="true"></canvas>
+  <script src="bg.js" defer></script>
+
+  <header class="site">
+    <div class="wrap">
+      <a class="logo" href="index.html"><svg class="logo-mark" viewBox="0 0 64 64" width="26" height="26"><rect width="64" height="64" rx="16" fill="#7c3aed"/><circle cx="32" cy="32" r="4" fill="white"/><circle cx="32" cy="32" r="13" fill="none" stroke="white" stroke-width="3" opacity="0.85"/><circle cx="32" cy="32" r="22" fill="none" stroke="white" stroke-width="3" opacity="0.5"/></svg>Sonar</a>
+      <nav class="site-nav">
+        <a href="index.html">Home</a>
+        <a href="about.html">About</a>
+        <a href="get-in-touch.html">Contact</a>
+        <a href="dashboard.html">Example Dashboard</a>
+        <a href="board.html">Example Board</a>
+        <a href="contact.html" class="nav-cta">Try it free</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="section section-decor">
+    <div class="wrap" style="max-width:760px;">
+      <a href="board.html" class="back-link">&larr; Back to example board</a>
+
+      <div id="profileLoading" class="empty-state">Loading account&hellip;</div>
+      <div id="profileError" class="empty-state" hidden></div>
+
+      <div id="profileContent" hidden>
+        <div class="profile-header">
+          <div>
+            <h1 id="profName" style="margin-bottom:6px;"></h1>
+            <p id="profMeta" class="profile-meta"></p>
+          </div>
+          <span id="profStatusBadge" class="verify-badge"></span>
+        </div>
+
+        <div class="profile-grid">
+          <div class="profile-card">
+            <h3>Company</h3>
+            <div class="profile-row"><span>Website</span><a id="profWebsite" href="#" target="_blank" rel="noopener"></a></div>
+            <div class="profile-row"><span>Territory</span><span id="profTerritory"></span></div>
+            <div class="profile-row"><span>Industry</span><span id="profIndustry"></span></div>
+            <div class="profile-row"><span>Company size</span><span id="profSize"></span></div>
+            <div class="profile-row"><span>ICP fit score</span><span id="profFit"></span></div>
+            <div class="profile-row"><span>Priority</span><span id="profPriority"></span></div>
+          </div>
+
+          <div class="profile-card">
+            <h3>Contact</h3>
+            <div class="profile-row"><span>Name</span><span id="profContactName"></span></div>
+            <div class="profile-row"><span>Title</span><span id="profContactTitle"></span></div>
+            <div class="profile-row">
+              <span>Phone</span>
+              <span id="profPhone"></span>
+            </div>
+            <div class="profile-row">
+              <span>Email</span>
+              <span id="profEmail"></span>
+            </div>
+            <div class="profile-row"><span>LinkedIn</span><a id="profLinkedin" href="#" target="_blank" rel="noopener">View profile</a></div>
+          </div>
+
+          <div class="profile-card">
+            <h3>Trigger</h3>
+            <div class="profile-row"><span>Type</span><span id="profTriggerType"></span></div>
+            <div class="profile-row"><span>Details</span><span id="profTriggerDetails"></span></div>
+          </div>
+
+          <div class="profile-card">
+            <h3>Notes</h3>
+            <p id="profNotes" style="color:var(--ink-soft); font-size:0.92rem; margin:0;"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="site">
+    <div class="wrap footer-grid">
+      <div class="footer-brand">
+        <a class="logo" href="index.html"><svg class="logo-mark" viewBox="0 0 64 64" width="24" height="24"><rect width="64" height="64" rx="16" fill="#7c3aed"/><circle cx="32" cy="32" r="4" fill="white"/><circle cx="32" cy="32" r="13" fill="none" stroke="white" stroke-width="3" opacity="0.85"/><circle cx="32" cy="32" r="22" fill="none" stroke="white" stroke-width="3" opacity="0.5"/></svg>Sonar</a>
+        <p class="footer-tagline">AI prospecting copilot for AEs and BDRs — verified companies and contacts, ready to call.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Product</h4>
+        <a href="index.html">Home</a>
+        <a href="contact.html">Try it free</a>
+        <a href="get-in-touch.html">Get in touch</a>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a href="about.html">About</a>
+        <a href="get-in-touch.html">Contact</a>
+      </div>
+      <div class="footer-col">
+        <h4>Legal</h4>
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="terms.html">Terms of Service</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      &copy; 2026 Cameron Dowd — Sonar
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="config.js"></script>
+  <script>
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const TRIGGER_LABELS = {
+      growth: 'Growth',
+      new_to_role: 'New to Role',
+      filled_out_form: 'Filled Out Form',
+      other: 'Other',
+    };
+
+    function text(id, value, fallback) {
+      document.getElementById(id).textContent = value || fallback || '—';
+    }
+
+    async function loadProfile() {
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get('id');
+      const loadingEl = document.getElementById('profileLoading');
+      const errorEl = document.getElementById('profileError');
+      const contentEl = document.getElementById('profileContent');
+
+      if (!id) {
+        loadingEl.hidden = true;
+        errorEl.hidden = false;
+        errorEl.textContent = 'No account specified. Go back to the board and click a company to view its profile.';
+        return;
+      }
+
+      const { data: row, error } = await supabaseClient.from('accounts').select('*').eq('id', id).single();
+
+      if (error || !row) {
+        loadingEl.hidden = true;
+        errorEl.hidden = false;
+        errorEl.textContent = 'Could not find that account — it may have been archived or removed.';
+        return;
+      }
+
+      document.title = `${row.name} — Sonar`;
+
+      text('profName', row.name);
+      document.getElementById('profMeta').textContent = [row.territory, row.industry, row.size ? `${row.size} employees` : null].filter(Boolean).join(' · ');
+
+      const isApproved = row.email_verified && row.phone_verified;
+      const badge = document.getElementById('profStatusBadge');
+      badge.textContent = isApproved ? '✓ Fully verified' : 'Awaiting verification';
+      if (!isApproved) badge.classList.add('verify-badge-pending');
+
+      const websiteEl = document.getElementById('profWebsite');
+      if (row.website) {
+        websiteEl.textContent = row.website;
+        websiteEl.href = row.website.startsWith('http') ? row.website : `https://${row.website}`;
+      } else {
+        websiteEl.textContent = '—';
+        websiteEl.removeAttribute('href');
+      }
+
+      text('profTerritory', row.territory);
+      text('profIndustry', row.industry);
+      text('profSize', row.size ? `${row.size} employees` : null);
+      text('profFit', row.icp_fit_score !== null && row.icp_fit_score !== undefined ? `${row.icp_fit_score} / 100` : null);
+      text('profPriority', row.priority ? `P${row.priority}` : null);
+
+      text('profContactName', row.contact_name);
+      text('profContactTitle', row.contact_title);
+
+      document.getElementById('profPhone').innerHTML = row.phone_verified
+        ? `${row.contact_phone} <span class="verify-badge">✓ verified</span>`
+        : `<span class="verify-badge verify-badge-pending">pending verification</span>`;
+
+      document.getElementById('profEmail').innerHTML = row.email_verified
+        ? `${row.contact_email} <span class="verify-badge">✓ verified</span>`
+        : `<span class="verify-badge verify-badge-pending">pending verification</span>`;
+
+      const linkedinEl = document.getElementById('profLinkedin');
+      if (row.linkedin_url) {
+        linkedinEl.href = row.linkedin_url;
+      } else {
+        linkedinEl.textContent = '—';
+        linkedinEl.removeAttribute('href');
+      }
+
+      text('profTriggerType', row.trigger_type ? (TRIGGER_LABELS[row.trigger_type] || row.trigger_type) : null);
+      text('profTriggerDetails', row.buying_triggers);
+      text('profNotes', row.research_notes, 'No notes yet.');
+
+      loadingEl.hidden = true;
+      contentEl.hidden = false;
+    }
+
+    loadProfile();
+  </script>
+
+</body>
+</html>

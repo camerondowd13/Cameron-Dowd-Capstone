@@ -23,7 +23,8 @@
         <a href="index.html">Home</a>
         <a href="about.html">About</a>
         <a href="get-in-touch.html">Contact</a>
-        <a href="board.html">Board</a>
+        <a href="dashboard.html">Example Dashboard</a>
+        <a href="board.html">Example Board</a>
         <a href="contact.html" class="active nav-cta">Try it free</a>
       </nav>
     </div>
@@ -142,7 +143,29 @@
   </section>
 
   <footer class="site">
-    <div class="wrap">
+    <div class="wrap footer-grid">
+      <div class="footer-brand">
+        <a class="logo" href="index.html"><svg class="logo-mark" viewBox="0 0 64 64" width="24" height="24"><rect width="64" height="64" rx="16" fill="#7c3aed"/><circle cx="32" cy="32" r="4" fill="white"/><circle cx="32" cy="32" r="13" fill="none" stroke="white" stroke-width="3" opacity="0.85"/><circle cx="32" cy="32" r="22" fill="none" stroke="white" stroke-width="3" opacity="0.5"/></svg>Sonar</a>
+        <p class="footer-tagline">AI prospecting copilot for AEs and BDRs — verified companies and contacts, ready to call.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Product</h4>
+        <a href="index.html">Home</a>
+        <a href="contact.html">Try it free</a>
+        <a href="get-in-touch.html">Get in touch</a>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a href="about.html">About</a>
+        <a href="get-in-touch.html">Contact</a>
+      </div>
+      <div class="footer-col">
+        <h4>Legal</h4>
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="terms.html">Terms of Service</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
       &copy; 2026 Cameron Dowd — Sonar
     </div>
   </footer>
@@ -176,6 +199,8 @@
         title: row.contact_title,
         phone: row.contact_phone,
         email: row.contact_email,
+        emailVerified: !!row.email_verified,
+        phoneVerified: !!row.phone_verified,
       }));
     }
 
@@ -218,6 +243,8 @@
       const shown = matches.slice(0, 3);
 
       shown.forEach(m => {
+        const isApproved = m.emailVerified && m.phoneVerified;
+
         const card = document.createElement('div');
         card.className = 'result-card';
         card.innerHTML = `
@@ -226,41 +253,45 @@
           <div class="contact-name"><strong>${m.contact}</strong>, ${m.title}</div>
           <div class="contact-details">
             <div class="detail">
-              <span class="detail-label">Phone</span>
+              <span class="detail-label">Phone ${m.phoneVerified ? '<span class="verify-badge">✓ verified</span>' : '<span class="verify-badge verify-badge-pending">pending</span>'}</span>
               <span class="reveal-slot">
                 <span class="masked">${maskPhone(m.phone)}</span>
                 <span class="real">${m.phone}</span>
               </span>
             </div>
             <div class="detail">
-              <span class="detail-label">Email</span>
+              <span class="detail-label">Email ${m.emailVerified ? '<span class="verify-badge">✓ verified</span>' : '<span class="verify-badge verify-badge-pending">pending</span>'}</span>
               <span class="reveal-slot">
                 <span class="masked">${maskEmail(m.email)}</span>
                 <span class="real">${m.email}</span>
               </span>
             </div>
           </div>
-          <button class="unlock-btn">Unlock contact (1 token)</button>
+          ${isApproved
+            ? '<button class="unlock-btn">Unlock contact (1 token)</button>'
+            : '<p class="fallback" style="margin-top:14px;">Not shown as a full match yet — still awaiting phone and email verification.</p>'}
         `;
 
         const unlockBtn = card.querySelector('.unlock-btn');
-        unlockBtn.addEventListener('click', () => {
-          if (tokensRemaining <= 0) return;
+        if (unlockBtn) {
+          unlockBtn.addEventListener('click', () => {
+            if (tokensRemaining <= 0) return;
 
-          tokensRemaining -= 1;
-          renderTokenDots();
+            tokensRemaining -= 1;
+            renderTokenDots();
 
-          card.querySelectorAll('.reveal-slot').forEach(slot => slot.classList.add('revealed'));
-          unlockBtn.textContent = 'Unlocked';
-          unlockBtn.disabled = true;
+            card.querySelectorAll('.reveal-slot').forEach(slot => slot.classList.add('revealed'));
+            unlockBtn.textContent = 'Unlocked';
+            unlockBtn.disabled = true;
 
-          if (tokensRemaining === 0) {
-            resultsEl.querySelectorAll('.unlock-btn:not(:disabled)').forEach(btn => {
-              btn.disabled = true;
-              btn.textContent = 'Out of tokens';
-            });
-          }
-        });
+            if (tokensRemaining === 0) {
+              resultsEl.querySelectorAll('.unlock-btn:not(:disabled)').forEach(btn => {
+                btn.disabled = true;
+                btn.textContent = 'Out of tokens';
+              });
+            }
+          });
+        }
 
         resultsEl.appendChild(card);
       });
@@ -280,7 +311,7 @@
         return (!territory || m.territory === territory)
           && (!industry || m.industry === industry)
           && (!title || m.title === title);
-      });
+      }).map(m => ({ ...m, emailVerified: true, phoneVerified: true }));
 
       const realMatches = await fetchRealMatches(territory, industry, title);
 

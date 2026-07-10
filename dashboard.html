@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard (Example) — Sonar</title>
+  <meta name="description" content="An example of the dashboard Sonar gives you — verified contacts, active accounts, and recent activity at a glance.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+</head>
+<body>
+
+  <canvas id="bgConstellation" aria-hidden="true"></canvas>
+  <script src="bg.js" defer></script>
+
+  <header class="site">
+    <div class="wrap">
+      <a class="logo" href="index.html"><svg class="logo-mark" viewBox="0 0 64 64" width="26" height="26"><rect width="64" height="64" rx="16" fill="#7c3aed"/><circle cx="32" cy="32" r="4" fill="white"/><circle cx="32" cy="32" r="13" fill="none" stroke="white" stroke-width="3" opacity="0.85"/><circle cx="32" cy="32" r="22" fill="none" stroke="white" stroke-width="3" opacity="0.5"/></svg>Sonar</a>
+      <nav class="site-nav">
+        <a href="index.html">Home</a>
+        <a href="about.html">About</a>
+        <a href="dashboard.html" class="active">Example Dashboard</a>
+        <a href="board.html">Example Board</a>
+        <a href="get-in-touch.html">Contact</a>
+        <a href="contact.html" class="nav-cta">Try it free</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="section section-decor">
+    <div class="wrap">
+      <div class="example-banner">
+        <span class="eyebrow" style="margin:0;">Example</span>
+        <p>This is what your dashboard looks like inside Sonar — a snapshot of your pipeline the moment you log in. The numbers below are sample data, but this is the real layout.</p>
+      </div>
+
+      <h1 style="margin-bottom:28px;">Example Dashboard</h1>
+
+      <div class="dash-stats">
+        <div class="dash-stat">
+          <span class="dash-stat-number" id="statTotal">0</span>
+          <span class="dash-stat-label">Accounts tracked</span>
+        </div>
+        <div class="dash-stat">
+          <span class="dash-stat-number" id="statVerified">0</span>
+          <span class="dash-stat-label">Fully verified contacts</span>
+        </div>
+        <div class="dash-stat">
+          <span class="dash-stat-number" id="statActive">0</span>
+          <span class="dash-stat-label">In active conversation</span>
+        </div>
+        <div class="dash-stat">
+          <span class="dash-stat-number" id="statClosed">0</span>
+          <span class="dash-stat-label">Closed</span>
+        </div>
+      </div>
+
+      <div class="dash-actions">
+        <a class="btn" href="contact.html">Search for new matches</a>
+        <a class="btn btn-secondary" href="board.html">View example board</a>
+      </div>
+
+      <h2 class="dash-subhead">Recent accounts</h2>
+
+      <div class="table-wrap">
+        <table class="kanban-table">
+          <thead>
+            <tr>
+              <th>Company</th>
+              <th>Contact</th>
+              <th>Status</th>
+              <th>Verified</th>
+              <th>Created</th>
+            </tr>
+          </thead>
+          <tbody id="recentTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <footer class="site">
+    <div class="wrap footer-grid">
+      <div class="footer-brand">
+        <a class="logo" href="index.html"><svg class="logo-mark" viewBox="0 0 64 64" width="24" height="24"><rect width="64" height="64" rx="16" fill="#7c3aed"/><circle cx="32" cy="32" r="4" fill="white"/><circle cx="32" cy="32" r="13" fill="none" stroke="white" stroke-width="3" opacity="0.85"/><circle cx="32" cy="32" r="22" fill="none" stroke="white" stroke-width="3" opacity="0.5"/></svg>Sonar</a>
+        <p class="footer-tagline">AI prospecting copilot for AEs and BDRs — verified companies and contacts, ready to call.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Product</h4>
+        <a href="index.html">Home</a>
+        <a href="contact.html">Try it free</a>
+        <a href="get-in-touch.html">Get in touch</a>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a href="about.html">About</a>
+        <a href="get-in-touch.html">Contact</a>
+      </div>
+      <div class="footer-col">
+        <h4>Legal</h4>
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="terms.html">Terms of Service</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      &copy; 2026 Cameron Dowd — Sonar
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="config.js"></script>
+  <script>
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const tableBodyEl = document.getElementById('recentTableBody');
+
+    function formatDate(iso) {
+      if (!iso) return '';
+      return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+
+    function animateCount(el, target, duration) {
+      const start = performance.now();
+      function tick(now) {
+        const progress = Math.min((now - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        el.textContent = Math.round(eased * target);
+        if (progress < 1) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    }
+
+    async function loadDashboard() {
+      const { data, error } = await supabaseClient
+        .from('accounts')
+        .select('*')
+        .eq('archived', false)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        tableBodyEl.innerHTML = `<tr><td colspan="5"><p class="empty-state">Error loading accounts: ${error.message}</p></td></tr>`;
+        return;
+      }
+
+      const accounts = data || [];
+      const verifiedCount = accounts.filter(a => a.email_verified && a.phone_verified).length;
+      const activeCount = accounts.filter(a => a.status === 'in_conversation' || a.status === 'opportunity').length;
+      const closedCount = accounts.filter(a => a.status === 'closed').length;
+
+      animateCount(document.getElementById('statTotal'), accounts.length, 900);
+      animateCount(document.getElementById('statVerified'), verifiedCount, 900);
+      animateCount(document.getElementById('statActive'), activeCount, 900);
+      animateCount(document.getElementById('statClosed'), closedCount, 900);
+
+      if (accounts.length === 0) {
+        tableBodyEl.innerHTML = '<tr><td colspan="5"><p class="empty-state">No accounts yet.</p></td></tr>';
+        return;
+      }
+
+      tableBodyEl.innerHTML = '';
+      accounts.slice(0, 5).forEach(row => {
+        const isApproved = row.email_verified && row.phone_verified;
+        const verifyBadge = isApproved
+          ? '<span class="verify-badge">✓ verified</span>'
+          : '<span class="verify-badge verify-badge-pending">unverified</span>';
+        const statusLabel = (row.status || '').replace(/_/g, ' ');
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="company-cell"><a class="company-link" href="account.html?id=${row.id}">${row.name}</a></td>
+          <td>${row.contact_name || ''}</td>
+          <td style="text-transform:capitalize;">${statusLabel}</td>
+          <td>${verifyBadge}</td>
+          <td>${formatDate(row.created_at)}</td>
+        `;
+        tableBodyEl.appendChild(tr);
+      });
+    }
+
+    loadDashboard();
+  </script>
+
+</body>
+</html>

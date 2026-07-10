@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin — Leads — Sonar</title>
-  <meta name="description" content="Contact form leads dashboard.">
+  <title>Privacy Policy — Sonar</title>
+  <meta name="description" content="How Sonar collects, uses, and protects your information.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
@@ -31,24 +31,22 @@
   </header>
 
   <section class="section section-decor">
-    <div class="wrap">
-      <h1 style="margin-bottom:24px;">Contact form leads</h1>
+    <div class="wrap prose">
+      <h1>Privacy Policy</h1>
 
-      <div class="table-wrap">
-        <table class="kanban-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Company</th>
-              <th>Message</th>
-              <th>Signup date</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="leadsTableBody"></tbody>
-        </table>
-      </div>
+      <p><strong>Last updated:</strong> July 2026</p>
+
+      <p>Sonar is currently a solo-built, pre-launch project — a capstone product built by Cameron Dowd. This policy describes what happens today, on this site, in its current form. It will be rewritten and expanded before Sonar processes real customer or prospect data at scale.</p>
+
+      <p><strong>What this site collects.</strong> If you use the "Try it free" demo, get-in-touch form, or waitlist form, we collect what you type into those fields — typically your name, email, company, and message. That information is sent directly to Cameron and stored so he can follow up with you. We don't sell it, and we don't share it with third parties for marketing.</p>
+
+      <p><strong>Sample data on this site.</strong> The company and contact records shown in the demo (names, phone numbers, emails) are seeded samples built from realistic ICP criteria — they are not a live data pull from a real data provider, and they do not represent real people or companies unless otherwise noted.</p>
+
+      <p><strong>Cookies and analytics.</strong> This site does not currently run third-party analytics or advertising trackers. If that changes, this page will be updated first.</p>
+
+      <p><strong>Future data provider.</strong> Sonar's eventual production version is intended to surface real, verified business contact data (phone and email) sourced from a data provider that will be selected during development. Once that's live, this policy will be updated to explain that provider, how contact records are sourced and verified, and how someone can request removal of their information.</p>
+
+      <p><strong>Questions.</strong> Reach out any time through the <a href="get-in-touch.html">contact form</a> — every message goes directly to Cameron.</p>
     </div>
   </section>
 
@@ -71,7 +69,7 @@
       </div>
       <div class="footer-col">
         <h4>Legal</h4>
-        <a href="privacy.html">Privacy Policy</a>
+        <a href="privacy.html" class="active">Privacy Policy</a>
         <a href="terms.html">Terms of Service</a>
       </div>
     </div>
@@ -79,51 +77,6 @@
       &copy; 2026 Cameron Dowd — Sonar
     </div>
   </footer>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="config.js"></script>
-  <script>
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    const tableBodyEl = document.getElementById('leadsTableBody');
-
-    function formatDate(iso) {
-      if (!iso) return '';
-      return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    }
-
-    async function loadLeads() {
-      const { data, error } = await supabaseClient
-        .from('leads')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        tableBodyEl.innerHTML = `<tr><td colspan="6"><p class="empty-state">Error loading leads: ${error.message}</p></td></tr>`;
-        return;
-      }
-
-      if (!data || data.length === 0) {
-        tableBodyEl.innerHTML = '<tr><td colspan="6"><p class="empty-state">No leads yet.</p></td></tr>';
-        return;
-      }
-
-      tableBodyEl.innerHTML = '';
-      data.forEach(row => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td class="company-cell">${row.name}</td>
-          <td>${row.email}</td>
-          <td>${row.company || ''}</td>
-          <td>${row.message || ''}</td>
-          <td>${formatDate(row.created_at)}</td>
-          <td>${row.status || ''}</td>
-        `;
-        tableBodyEl.appendChild(tr);
-      });
-    }
-
-    loadLeads();
-  </script>
 
 </body>
 </html>

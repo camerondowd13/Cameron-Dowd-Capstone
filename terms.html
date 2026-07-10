@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin — Leads — Sonar</title>
-  <meta name="description" content="Contact form leads dashboard.">
+  <title>Terms of Service — Sonar</title>
+  <meta name="description" content="The terms that govern use of the Sonar website and demo.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
@@ -31,24 +31,24 @@
   </header>
 
   <section class="section section-decor">
-    <div class="wrap">
-      <h1 style="margin-bottom:24px;">Contact form leads</h1>
+    <div class="wrap prose">
+      <h1>Terms of Service</h1>
 
-      <div class="table-wrap">
-        <table class="kanban-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Company</th>
-              <th>Message</th>
-              <th>Signup date</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="leadsTableBody"></tbody>
-        </table>
-      </div>
+      <p><strong>Last updated:</strong> July 2026</p>
+
+      <p>Sonar is currently a pre-launch, solo-built project by Cameron Dowd. These terms cover the website in its current form — the marketing pages and the sample demo. They will be replaced with a full commercial agreement before any paid product launches.</p>
+
+      <p><strong>The demo.</strong> The "Try it free" tool returns seeded sample data built from realistic ICP criteria (state, industry, company size, job title). It is representative of what the finished product will return, not a live, real-time data pull. Don't use the sample output as verified business intelligence — it's a demonstration, not a data source.</p>
+
+      <p><strong>No account required.</strong> The demo runs without signup. If you submit the "Get in touch" or waitlist forms, you're providing your contact information voluntarily so Cameron can follow up — see the <a href="privacy.html">Privacy Policy</a> for how that's handled.</p>
+
+      <p><strong>No warranty.</strong> This site and its demo are provided as-is, without guarantees of uptime, accuracy, or fitness for a particular purpose, while the product is in development.</p>
+
+      <p><strong>Acceptable use.</strong> Don't attempt to scrape, abuse, or disrupt this site or its forms. Don't submit false contact information through the forms.</p>
+
+      <p><strong>Changes.</strong> These terms may change as the product develops. Material changes will be reflected on this page with an updated date.</p>
+
+      <p><strong>Contact.</strong> Questions about these terms can go through the <a href="get-in-touch.html">contact form</a>.</p>
     </div>
   </section>
 
@@ -72,58 +72,13 @@
       <div class="footer-col">
         <h4>Legal</h4>
         <a href="privacy.html">Privacy Policy</a>
-        <a href="terms.html">Terms of Service</a>
+        <a href="terms.html" class="active">Terms of Service</a>
       </div>
     </div>
     <div class="wrap footer-bottom">
       &copy; 2026 Cameron Dowd — Sonar
     </div>
   </footer>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="config.js"></script>
-  <script>
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    const tableBodyEl = document.getElementById('leadsTableBody');
-
-    function formatDate(iso) {
-      if (!iso) return '';
-      return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    }
-
-    async function loadLeads() {
-      const { data, error } = await supabaseClient
-        .from('leads')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        tableBodyEl.innerHTML = `<tr><td colspan="6"><p class="empty-state">Error loading leads: ${error.message}</p></td></tr>`;
-        return;
-      }
-
-      if (!data || data.length === 0) {
-        tableBodyEl.innerHTML = '<tr><td colspan="6"><p class="empty-state">No leads yet.</p></td></tr>';
-        return;
-      }
-
-      tableBodyEl.innerHTML = '';
-      data.forEach(row => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td class="company-cell">${row.name}</td>
-          <td>${row.email}</td>
-          <td>${row.company || ''}</td>
-          <td>${row.message || ''}</td>
-          <td>${formatDate(row.created_at)}</td>
-          <td>${row.status || ''}</td>
-        `;
-        tableBodyEl.appendChild(tr);
-      });
-    }
-
-    loadLeads();
-  </script>
 
 </body>
 </html>
