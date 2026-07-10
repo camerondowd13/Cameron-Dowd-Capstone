@@ -257,93 +257,27 @@
     </div>
   </section>
 
+  <section class="closing-cta">
+    <div class="wrap">
+      <h2>Ready to stop researching<br>and start dialing?</h2>
+      <p>See real sample matches for your state and industry — instantly, no signup required.</p>
+      <div class="cta-row">
+        <a class="btn" href="contact.html">Try it free</a>
+        <a class="btn btn-secondary" href="get-in-touch.html">Get in touch</a>
+      </div>
+    </div>
+  </section>
+
   <footer class="site">
     <div class="wrap">
       &copy; 2026 Cameron Dowd — Sonar
     </div>
   </footer>
 
+  <script src="bg.js"></script>
   <script>
     (function () {
-      const canvas = document.getElementById('bgConstellation');
-      const ctx = canvas.getContext('2d');
       const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      let particles = [];
-      let width, height;
-
-      function sizeCanvas() {
-        width = window.innerWidth;
-        height = document.documentElement.scrollHeight;
-        canvas.width = width;
-        canvas.height = height;
-      }
-
-      function initParticles() {
-        const count = Math.min(70, Math.max(30, Math.floor((width * height) / 22000)));
-        particles = Array.from({ length: count }, () => ({
-          x: Math.random() * width,
-          y: Math.random() * height,
-          vx: (Math.random() - 0.5) * 0.15,
-          vy: (Math.random() - 0.5) * 0.15,
-        }));
-      }
-
-      function drawFrame() {
-        ctx.clearRect(0, 0, width, height);
-        const linkDist = 140;
-
-        for (let i = 0; i < particles.length; i++) {
-          const p = particles[i];
-          if (!reduceMotion) {
-            p.x += p.vx;
-            p.y += p.vy;
-            if (p.x < 0 || p.x > width) p.vx *= -1;
-            if (p.y < 0 || p.y > height) p.vy *= -1;
-            p.x = Math.max(0, Math.min(width, p.x));
-            p.y = Math.max(0, Math.min(height, p.y));
-          }
-        }
-
-        for (let i = 0; i < particles.length; i++) {
-          for (let j = i + 1; j < particles.length; j++) {
-            const a = particles[i], b = particles[j];
-            const dx = a.x - b.x, dy = a.y - b.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < linkDist) {
-              ctx.strokeStyle = 'rgba(167, 139, 250, ' + (0.14 * (1 - dist / linkDist)) + ')';
-              ctx.lineWidth = 1;
-              ctx.beginPath();
-              ctx.moveTo(a.x, a.y);
-              ctx.lineTo(b.x, b.y);
-              ctx.stroke();
-            }
-          }
-        }
-
-        for (let i = 0; i < particles.length; i++) {
-          const p = particles[i];
-          ctx.fillStyle = 'rgba(196, 181, 253, 0.5)';
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, 1.6, 0, Math.PI * 2);
-          ctx.fill();
-        }
-
-        if (!reduceMotion) requestAnimationFrame(drawFrame);
-      }
-
-      sizeCanvas();
-      initParticles();
-      drawFrame();
-
-      let resizeTimer;
-      window.addEventListener('resize', () => {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(() => {
-          sizeCanvas();
-          initParticles();
-          if (reduceMotion) drawFrame();
-        }, 200);
-      });
 
       function animateCount(el, target, duration, suffix) {
         const start = performance.now();
@@ -590,6 +524,31 @@
           requestAnimationFrame(blipLoop);
         }
         requestAnimationFrame(blipLoop);
+      }
+
+      if (!reduceMotion && 'animate' in Element.prototype) {
+        document.querySelectorAll('.faq-item').forEach((item) => {
+          const summary = item.querySelector('summary');
+          const content = item.querySelector('p');
+          if (!summary || !content) return;
+          summary.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (item.open) {
+              const anim = content.animate([
+                { height: content.offsetHeight + 'px', opacity: 1, marginTop: '14px' },
+                { height: '0px', opacity: 0, marginTop: '0px' },
+              ], { duration: 220, easing: 'ease' });
+              anim.onfinish = () => { item.open = false; };
+            } else {
+              item.open = true;
+              const h = content.offsetHeight;
+              content.animate([
+                { height: '0px', opacity: 0, marginTop: '0px' },
+                { height: h + 'px', opacity: 1, marginTop: '14px' },
+              ], { duration: 260, easing: 'ease' });
+            }
+          });
+        });
       }
 
       if (!reduceMotion && 'IntersectionObserver' in window) {

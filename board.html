@@ -5,11 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Outreach Board — Sonar</title>
   <meta name="description" content="Kanban-style triage board for prospecting outreach, backed by live Supabase data.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="board.css">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
 </head>
 <body class="dark-theme">
+
+  <canvas id="bgConstellation" aria-hidden="true"></canvas>
+  <script src="bg.js" defer></script>
 
   <header class="site">
     <div class="wrap">
@@ -24,7 +30,7 @@
     </div>
   </header>
 
-  <section class="section">
+  <section class="section section-decor">
     <div class="wrap">
       <div class="kanban-toolbar">
         <h1 style="margin:0;">Outreach board</h1>
