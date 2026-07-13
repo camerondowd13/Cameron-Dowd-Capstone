@@ -1,0 +1,8 @@
+{
+  "name": "cameron-dowd-capstone",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@composio/core": "latest"
+  }
+}
