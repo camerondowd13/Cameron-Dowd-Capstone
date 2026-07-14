@@ -120,13 +120,13 @@ def find_contacts_route():
         return jsonify(error="'account_name' is required"), 400
 
     try:
-        contacts = contact_finder.find_contacts(
+        result = contact_finder.find_contacts(
             account_name,
             domain=body.get("domain"),
             target_titles=body.get("target_titles"),
             limit=body.get("limit", 3),
         )
-        return jsonify(contacts=contacts)
+        return jsonify(result)
     except Exception as e:
         return jsonify(error=str(e)), 500
 

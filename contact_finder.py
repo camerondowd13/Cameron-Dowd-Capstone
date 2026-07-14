@@ -56,6 +56,14 @@ Also report source_url for each person: the real URL (from your search
 results) where you found their name/title/contact info, so a human can
 click through and verify. Never invent a URL.
 
+Separately, also report general_office: the company's general/main
+office phone number, if you saw one anywhere in your searches (e.g. on a
+"Contact Us" page) — even if you couldn't find a direct line for any
+specific person. This is a fallback so there's still a real number to
+call even when no named contact is reachable. Only report a real number
+you actually saw, with its source_url — null for both if you never saw
+one. Never invent a number.
+
 Use max 4 searches. Report real people only — never invent a name."""
 
 WEB_SEARCH_TOOL = {
@@ -105,9 +113,21 @@ SUBMIT_TOOL = {
                     },
                     "required": ["name", "title", "email", "phone", "source_url"],
                 },
-            }
+            },
+            "general_office": {
+                "type": ["object", "null"],
+                "description": (
+                    "The company's general/main office phone number, if seen "
+                    "anywhere in search results -- null if never seen."
+                ),
+                "properties": {
+                    "phone": {"type": ["string", "null"]},
+                    "source_url": {"type": ["string", "null"]},
+                },
+                "required": ["phone", "source_url"],
+            },
         },
-        "required": ["contacts"],
+        "required": ["contacts", "general_office"],
     },
 }
 
@@ -122,10 +142,19 @@ def find_contacts(
     domain: str | None = None,
     target_titles: list[str] | None = None,
     limit: int = 3,
-) -> list[dict]:
-    """Find reachable contacts at an account. Returns up to `limit` dicts:
-    {"name", "title", "email", "phone"} — only contacts with BOTH email
-    and phone confirmed are returned (PRD: no partial-credit contacts).
+) -> dict:
+    """Find reachable contacts at an account, plus a general-office phone
+    fallback. Returns {"contacts": [...], "general_office": {...} | None}.
+
+    contacts: up to `limit` dicts {"name", "title", "email", "phone",
+    "source_url"} — only contacts with BOTH email and phone confirmed are
+    included (PRD: no partial-credit contacts).
+
+    general_office: {"phone", "source_url"} for the company's main line,
+    or None if it was never seen in search results. This is a fallback so
+    there's still something to call even when zero named contacts are
+    reachable -- direct lines for a specific person are rarely published,
+    but a company's main number almost always is.
     """
     anthropic_key = os.getenv("ANTHROPIC_API_KEY")
     exa_key = os.getenv("EXA_API_KEY")
@@ -180,7 +209,7 @@ def find_contacts(
                 continue
 
             if block.name == "submit_contacts":
-                submitted = block.input.get("contacts", [])
+                submitted = block.input
                 tool_results.append(
                     {"type": "tool_result", "tool_use_id": block.id, "content": "Received."}
                 )
@@ -202,10 +231,18 @@ def find_contacts(
                 )
 
         if submitted is not None:
-            reachable = [c for c in submitted if _is_reachable(c)]
+            all_contacts = submitted.get("contacts", [])
+            reachable = [c for c in all_contacts if _is_reachable(c)]
             for c in reachable:
                 c["source_url"] = strip_linkedin(c.get("source_url"))
-            return reachable[:limit]
+
+            general_office = submitted.get("general_office")
+            if general_office:
+                phone = clean_nullish(general_office.get("phone"))
+                source_url = strip_linkedin(general_office.get("source_url"))
+                general_office = {"phone": phone, "source_url": source_url} if phone and source_url else None
+
+            return {"contacts": reachable[:limit], "general_office": general_office}
 
         messages.append({"role": "user", "content": tool_results})
 
