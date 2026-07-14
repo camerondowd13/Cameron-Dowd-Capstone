@@ -255,8 +255,14 @@ def find_accounts(
             for c in filtered:
                 key = (c.get("name") or "").strip().lower()
                 if key and key not in seen_names:
-                    seen_names.add(key)
                     c["source_url"] = strip_linkedin(c.get("source_url"))
+                    # No source_url means no specific page backs this claim --
+                    # indistinguishable from a hallucination once it can't be
+                    # clicked and checked, so it's dropped rather than returned
+                    # as a lower-confidence result.
+                    if not c["source_url"]:
+                        continue
+                    seen_names.add(key)
                     deduped.append(c)
             return deduped[:limit]
 
