@@ -442,18 +442,24 @@ def find_accounts(
                 if c.get("employee_count") is not None and c.get("website") and c.get("contacts_seen")
             ]
 
-            # Stage 3: a named contact isn't actually reachable until email
-            # AND phone are both confirmed (same bar ContactFinder already
-            # enforces) -- reuse it directly rather than re-implementing.
-            # This is the most expensive stage (a full ContactFinder run per
-            # candidate), so it only runs on candidates that already passed
-            # stages 1-2.
+            # Stage 3: realistic "reachable" bar, based on what today's testing
+            # actually proved achievable without a paid contact-data provider
+            # (Apollo/ZoomInfo). A named person + confirmed direct email+phone
+            # was tested repeatedly and consistently returned zero -- that
+            # data mostly isn't published anywhere public. What DOES work
+            # reliably: a real named person (contacts_seen, already grounded)
+            # to ask for by name, plus a real verified way to actually reach
+            # the company (general phone or email). That's a legitimate
+            # cold-call workflow, just not a direct dial.
             fully_qualified = []
             for c in stage2_qualified:
                 result = contact_finder.find_contacts(c["name"], domain=_domain(c["website"]))
-                if result["contacts"]:
-                    c["verified_contacts"] = result["contacts"]
-                    c["general_office"] = result["general_office"]
+                # Prefer any fully-verified direct contact if one happens to
+                # exist, but don't require it -- general_office satisfies
+                # "reachable" too.
+                c["verified_contacts"] = result["contacts"]
+                c["general_office"] = result["general_office"]
+                if c["contacts_seen"] and (result["contacts"] or result["general_office"]):
                     fully_qualified.append(c)
                 if len(fully_qualified) >= limit:
                     break

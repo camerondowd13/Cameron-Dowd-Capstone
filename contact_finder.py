@@ -57,12 +57,13 @@ results) where you found their name/title/contact info, so a human can
 click through and verify. Never invent a URL.
 
 Separately, also report general_office: the company's general/main
-office phone number, if you saw one anywhere in your searches (e.g. on a
-"Contact Us" page) — even if you couldn't find a direct line for any
-specific person. This is a fallback so there's still a real number to
-call even when no named contact is reachable. Only report a real number
-you actually saw, with its source_url — null for both if you never saw
-one. Never invent a number.
+office phone number AND general email (e.g. info@, sales@, contact@),
+if you saw either anywhere in your searches (e.g. on a "Contact Us"
+page) — even if you couldn't find a direct line for any specific
+person. This is a fallback so there's still a real way to reach the
+company even when no named contact is directly reachable. Only report a
+real phone/email you actually saw, with its source_url — null for
+anything you didn't see. Never invent one.
 
 Use max 4 searches. Report real people only — never invent a name."""
 
@@ -117,14 +118,16 @@ SUBMIT_TOOL = {
             "general_office": {
                 "type": ["object", "null"],
                 "description": (
-                    "The company's general/main office phone number, if seen "
-                    "anywhere in search results -- null if never seen."
+                    "The company's general/main office phone and/or general "
+                    "email, if seen anywhere in search results -- null for "
+                    "anything never seen."
                 ),
                 "properties": {
                     "phone": {"type": ["string", "null"]},
+                    "email": {"type": ["string", "null"]},
                     "source_url": {"type": ["string", "null"]},
                 },
-                "required": ["phone", "source_url"],
+                "required": ["phone", "email", "source_url"],
             },
         },
         "required": ["contacts", "general_office"],
@@ -150,11 +153,12 @@ def find_contacts(
     "source_url"} — only contacts with BOTH email and phone confirmed are
     included (PRD: no partial-credit contacts).
 
-    general_office: {"phone", "source_url"} for the company's main line,
-    or None if it was never seen in search results. This is a fallback so
-    there's still something to call even when zero named contacts are
-    reachable -- direct lines for a specific person are rarely published,
-    but a company's main number almost always is.
+    general_office: {"phone", "email", "source_url"} for the company's main
+    line/general inbox, or None if neither was ever seen. This is a
+    fallback so there's still a real way to reach the company even when
+    zero named contacts are directly reachable -- direct lines/emails for
+    a specific person are rarely published, but a company's main
+    phone/email almost always is.
     """
     anthropic_key = os.getenv("ANTHROPIC_API_KEY")
     exa_key = os.getenv("EXA_API_KEY")
@@ -239,8 +243,12 @@ def find_contacts(
             general_office = submitted.get("general_office")
             if general_office:
                 phone = clean_nullish(general_office.get("phone"))
+                email = clean_nullish(general_office.get("email"))
                 source_url = strip_linkedin(general_office.get("source_url"))
-                general_office = {"phone": phone, "source_url": source_url} if phone and source_url else None
+                general_office = (
+                    {"phone": phone, "email": email, "source_url": source_url}
+                    if (phone or email) and source_url else None
+                )
 
             return {"contacts": reachable[:limit], "general_office": general_office}
 
