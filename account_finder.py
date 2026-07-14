@@ -19,6 +19,7 @@ from anthropic import Anthropic
 from dotenv import load_dotenv
 from exa_py import Exa
 
+import contact_finder
 from icp import MAX_SIZE, MIN_SIZE, VALID_INDUSTRIES
 from search_utils import run_exa_search, strip_linkedin
 
@@ -436,11 +437,28 @@ def find_accounts(
             _verify_candidate_details(client, exa, to_verify_cap, seen_urls, search_text_corpus)
             _ground(to_verify_cap)  # re-check stage 2's additions against the now-larger corpus
 
-            qualified = [
+            stage2_qualified = [
                 c for c in to_verify_cap
                 if c.get("employee_count") is not None and c.get("website") and c.get("contacts_seen")
             ]
-            return qualified[:limit]
+
+            # Stage 3: a named contact isn't actually reachable until email
+            # AND phone are both confirmed (same bar ContactFinder already
+            # enforces) -- reuse it directly rather than re-implementing.
+            # This is the most expensive stage (a full ContactFinder run per
+            # candidate), so it only runs on candidates that already passed
+            # stages 1-2.
+            fully_qualified = []
+            for c in stage2_qualified:
+                result = contact_finder.find_contacts(c["name"], domain=_domain(c["website"]))
+                if result["contacts"]:
+                    c["verified_contacts"] = result["contacts"]
+                    c["general_office"] = result["general_office"]
+                    fully_qualified.append(c)
+                if len(fully_qualified) >= limit:
+                    break
+
+            return fully_qualified[:limit]
 
         messages.append({"role": "user", "content": tool_results})
 
