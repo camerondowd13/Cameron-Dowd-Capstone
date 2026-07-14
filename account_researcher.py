@@ -1,12 +1,15 @@
 """
 AccountResearcher: given a company name, research it and return structured
-findings for downstream sales agents (industry, size, growth signals, etc.).
+findings for downstream sales agents (industry, size, buying triggers, etc.),
+plus a deterministic meets_icp flag computed in code against icp.py.
 
 Search is backed by Exa (not Claude's built-in web_search tool) — Claude
 Sonnet 5 runs an agentic tool-use loop where it decides what to search for,
 we execute those searches against Exa, and it submits its final findings
-through a schema-enforced tool call so the output is always exactly the
-6 requested fields.
+through a schema-enforced tool call. meets_icp is NOT self-reported by the
+model — it's computed in code from the structured employee_count and
+industry_category the model provides, per the PRD's "binary ICP match/
+no-match, no confidence scoring" requirement.
 """
 import json
 import os
@@ -15,6 +18,9 @@ import sys
 from anthropic import Anthropic
 from dotenv import load_dotenv
 from exa_py import Exa
+
+from icp import VALID_INDUSTRIES, meets_size
+from search_utils import clean_nullish, run_exa_search
 
 load_dotenv(".env.local")
 
@@ -25,18 +31,44 @@ MAX_TURNS = MAX_SEARCHES + 2  # spare turns for the "limit reached" nudge + fina
 FIELDS = [
     "industry",
     "size_range",
-    "growth_signals",
+    "buying_triggers",
     "hiring_status",
     "tech_stack_hints",
     "recent_news",
 ]
 
-SYSTEM_PROMPT = """You are a SaaS AE researching target accounts.
+SYSTEM_PROMPT = f"""You are a SaaS AE researching target accounts.
 Given an account name, use web_search to find: industry, size_range,
-growth_signals, hiring_status, tech_stack_hints, recent_news
-(last 90 days). Return as structured JSON with EXACTLY those 6
-fields. Use max 4 searches. If a field can't be found, use null —
-NEVER hallucinate."""
+buying_triggers, hiring_status, tech_stack_hints, recent_news
+(last 90 days). Return as structured JSON with EXACTLY those 6 fields,
+plus two structured fields used for ICP scoring:
+- employee_count: your best estimate as a plain integer, or null if truly
+  unknown. Never guess a number you can't back with a search result.
+- industry_category: exactly one of {VALID_INDUSTRIES + ["other"]}, based
+  on the account's actual primary business.
+Use max 4 searches. If a field can't be found, use null — NEVER hallucinate.
+
+buying_triggers means specific signals suggesting this account may be
+evaluating new software right now — recent funding, leadership changes,
+rapid hiring in Finance/AP/Procurement roles, expansion into new offices
+or markets, a recent product launch, or public complaints about their
+current tools. Not generic company growth — only signals that plausibly
+indicate active buying intent. Null if none found.
+
+Many company names are shared by unrelated businesses (e.g. "Apex Solutions").
+Before reporting anything, you must be confident all 6 fields describe the
+SAME single company. Disambiguation rules:
+- If a known official domain is given in the research request, treat it as
+  ground truth. Discard any search result that isn't clearly that company,
+  even if the name matches.
+- If no domain is given, identify the single most likely company (the one
+  with the strongest, most consistent signal across your searches — e.g.
+  most coverage, most specific matching details) and report on that company
+  ONLY. Never blend facts from two different companies that share a name.
+- If you cannot confidently settle on one company — name is generic, no
+  domain given, and results are split across clearly unrelated businesses
+  with no clear leader — return null for ALL 6 fields. Reporting confident
+  facts about the wrong company is worse than returning nothing."""
 
 WEB_SEARCH_TOOL = {
     "name": "web_search",
@@ -60,48 +92,48 @@ SUBMIT_TOOL = {
     "input_schema": {
         "type": "object",
         "properties": {
-            field: {
+            **{
+                field: {
+                    "type": ["string", "null"],
+                    "description": f"The account's {field.replace('_', ' ')}, or null if not found.",
+                }
+                for field in FIELDS
+            },
+            "employee_count": {
+                "type": ["integer", "null"],
+                "description": "Best estimate of headcount as a plain integer, or null if unknown.",
+            },
+            "industry_category": {
                 "type": ["string", "null"],
-                "description": f"The account's {field.replace('_', ' ')}, or null if not found.",
-            }
-            for field in FIELDS
+                "enum": VALID_INDUSTRIES + ["other", None],
+                "description": "Primary business category, for ICP scoring.",
+            },
         },
-        "required": FIELDS,
+        "required": FIELDS + ["employee_count", "industry_category"],
     },
 }
 
-_NULLISH = {"null", "none", "n/a", "unknown", ""}
+def _compute_meets_icp(submitted: dict, buying_triggers) -> bool:
+    category = (submitted.get("industry_category") or "").lower()
+    if category not in VALID_INDUSTRIES:
+        return False
+    return meets_size(submitted.get("employee_count"), has_trigger=bool(buying_triggers))
 
 
-def _clean(value):
-    """Normalize model output so 'null'-as-string collapses to real None."""
-    if isinstance(value, str) and value.strip().lower() in _NULLISH:
-        return None
-    return value
-
-
-def _run_exa_search(exa: Exa, query: str) -> str:
-    response = exa.search(
-        query,
-        type="neural",
-        num_results=5,
-        contents={"text": {"maxCharacters": 800}},
-    )
-    if not response.results:
-        return "No results found."
-    return "\n\n".join(
-        f"- {r.title} ({r.url})\n  {(r.text or '').strip()}"
-        for r in response.results
-    )
-
-
-def research_account(account_name: str) -> dict:
+def research_account(account_name: str, domain: str | None = None) -> dict:
     """Research a target account by name and return structured findings.
 
     Runs an agentic loop: Claude decides what to search for (via Exa,
     capped at MAX_SEARCHES calls) and submits its findings through a
-    schema-enforced tool call, so the return value always has exactly the
-    6 requested fields — missing data as None, never guessed.
+    schema-enforced tool call. Returns the 6 narrative FIELDS, plus
+    employee_count (int|None) and meets_icp (bool, computed in code from
+    icp.py — never self-reported by the model).
+
+    domain: optional official website domain (e.g. "stampli.com"). When
+    given, the first search is locked to that domain to anchor company
+    identity before broader searches run — pass this whenever the caller
+    has it (e.g. derived from a contact email) to cut down ambiguity on
+    generic company names.
     """
     anthropic_key = os.getenv("ANTHROPIC_API_KEY")
     exa_key = os.getenv("EXA_API_KEY")
@@ -113,7 +145,13 @@ def research_account(account_name: str) -> dict:
     client = Anthropic(api_key=anthropic_key)
     exa = Exa(exa_key)
 
-    messages = [{"role": "user", "content": f"Research this account: {account_name}"}]
+    initial_request = f"Research this account: {account_name}"
+    if domain:
+        initial_request += (
+            f"\nKnown official domain: {domain}. Confirm you have the right "
+            "company against this domain before trusting any other source."
+        )
+    messages = [{"role": "user", "content": initial_request}]
     search_count = 0
 
     for _ in range(MAX_TURNS):
@@ -149,13 +187,21 @@ def research_account(account_name: str) -> dict:
                     )
                 else:
                     search_count += 1
-                    content = _run_exa_search(exa, block.input.get("query", account_name))
+                    # Anchor identity on the known domain for the first search only —
+                    # later searches need the open web (news, hiring sites, etc.)
+                    lock_domains = [domain] if (domain and search_count == 1) else None
+                    content = run_exa_search(
+                        exa, block.input.get("query", account_name), lock_domains
+                    )
                 tool_results.append(
                     {"type": "tool_result", "tool_use_id": block.id, "content": content}
                 )
 
         if submitted is not None:
-            return {field: _clean(submitted.get(field)) for field in FIELDS}
+            result = {field: clean_nullish(submitted.get(field)) for field in FIELDS}
+            result["employee_count"] = submitted.get("employee_count")
+            result["meets_icp"] = _compute_meets_icp(submitted, result["buying_triggers"])
+            return result
 
         messages.append({"role": "user", "content": tool_results})
 
@@ -165,11 +211,12 @@ def research_account(account_name: str) -> dict:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print('Usage: python account_researcher.py "Account Name"')
+    if len(sys.argv) not in (2, 3):
+        print('Usage: python account_researcher.py "Account Name" [domain]')
         sys.exit(1)
 
     name = sys.argv[1]
-    print(f"Researching '{name}'...", file=sys.stderr)
-    findings = research_account(name)
+    account_domain = sys.argv[2] if len(sys.argv) == 3 else None
+    print(f"Researching '{name}'" + (f" (domain: {account_domain})" if account_domain else "") + "...", file=sys.stderr)
+    findings = research_account(name, domain=account_domain)
     print(json.dumps(findings, indent=2))
