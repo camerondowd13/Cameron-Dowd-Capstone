@@ -13,6 +13,7 @@ import json
 import math
 import os
 import sys
+from urllib.parse import urlparse
 
 from anthropic import Anthropic
 from dotenv import load_dotenv
@@ -20,6 +21,15 @@ from exa_py import Exa
 
 from icp import MAX_SIZE, MIN_SIZE, VALID_INDUSTRIES
 from search_utils import run_exa_search, strip_linkedin
+
+
+def _domain(url: str) -> str:
+    """Normalize a URL down to its bare domain for comparison (strips
+    'www.', scheme, path)."""
+    if not url:
+        return ""
+    netloc = urlparse(url).netloc.lower()
+    return netloc[4:] if netloc.startswith("www.") else netloc
 
 load_dotenv(".env.local")
 
@@ -60,6 +70,16 @@ For every candidate, also report source_url: the exact URL (from your
 search results) that backs up the buying_trigger claim (or, if there's no
 trigger, any URL confirming the company/location/size). This must be a
 real URL that appeared in a web_search result — never invent one.
+
+Also report, if seen in your search results:
+- website: the company's own official homepage domain (e.g.
+  "https://company.com"), separate from source_url (which may be a news
+  article, not the company's own site). Null if not seen.
+- contacts_seen: any real people (name + title) you happened to notice
+  for this company while searching, even without email/phone confirmed —
+  this is a lighter signal than full contact verification, just names
+  worth knowing about. Only include names that actually appeared in your
+  search results — never invent one. Empty list if none seen.
 
 You have {search_budget} searches available -- to actually cover a large
 requested volume, vary your queries across different angles (different
@@ -120,8 +140,27 @@ SUBMIT_TOOL = {
                             "type": ["string", "null"],
                             "description": "Real URL from a search result backing up this candidate, or null.",
                         },
+                        "website": {
+                            "type": ["string", "null"],
+                            "description": "The company's own official homepage domain, if seen. Null if unknown.",
+                        },
+                        "contacts_seen": {
+                            "type": "array",
+                            "description": "Real people (name + title) noticed for this company, even without confirmed email/phone. Empty if none.",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {"type": "string"},
+                                    "title": {"type": ["string", "null"]},
+                                },
+                                "required": ["name", "title"],
+                            },
+                        },
                     },
-                    "required": ["name", "location", "employee_count", "buying_trigger", "source_url"],
+                    "required": [
+                        "name", "location", "employee_count", "buying_trigger",
+                        "source_url", "website", "contacts_seen",
+                    ],
                 },
             }
         },
@@ -197,6 +236,7 @@ def find_accounts(
     messages = [{"role": "user", "content": request}]
     search_count = 0
     seen_urls = set()
+    search_text_corpus = []  # raw text from every search, for name-grounding contacts_seen
 
     for _ in range(max_turns):
         # Once the search budget is spent, force the model to submit --
@@ -250,11 +290,15 @@ def find_accounts(
                         exa, block.input.get("query", territory),
                         num_results=EXA_NUM_RESULTS, seen_urls=seen_urls,
                     )
+                    search_text_corpus.append(content)
                 tool_results.append(
                     {"type": "tool_result", "tool_use_id": block.id, "content": content}
                 )
 
         if submitted is not None:
+            corpus = "\n".join(search_text_corpus).lower()
+            seen_domains = {_domain(u) for u in seen_urls if _domain(u)}
+
             filtered = [c for c in submitted if _within_size_range(c, min_size, max_size)]
             deduped = []
             seen_names = set()
@@ -268,6 +312,25 @@ def find_accounts(
                     # non-null check can't -- a real-looking but never-shown URL.
                     if not c["source_url"] or c["source_url"] not in seen_urls:
                         continue
+
+                    # website: grounded at the domain level (the exact homepage
+                    # URL may never appear verbatim in results, but its domain
+                    # must match something Exa actually returned).
+                    website = strip_linkedin(c.get("website"))
+                    if not website or _domain(website) not in seen_domains:
+                        c["website"] = None
+                    else:
+                        c["website"] = website
+
+                    # contacts_seen: each name must actually appear in the raw
+                    # search text this run saw -- not just trusted as reported.
+                    grounded_contacts = []
+                    for person in c.get("contacts_seen") or []:
+                        name = (person.get("name") or "").strip()
+                        if name and name.lower() in corpus:
+                            grounded_contacts.append(person)
+                    c["contacts_seen"] = grounded_contacts
+
                     seen_names.add(key)
                     deduped.append(c)
             return deduped[:limit]
