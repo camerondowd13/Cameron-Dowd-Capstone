@@ -211,7 +211,7 @@ def find_accounts(
 
         response = client.messages.create(
             model=MODEL,
-            max_tokens=4096,
+            max_tokens=8192,
             system=system_prompt,
             tools=tools,
             tool_choice=tool_choice,
@@ -220,7 +220,11 @@ def find_accounts(
         messages.append({"role": "assistant", "content": response.content})
 
         if response.stop_reason != "tool_use":
-            break
+            raise RuntimeError(
+                f"find_accounts(state={state!r}) got stop_reason={response.stop_reason!r} "
+                "instead of a tool call -- likely ran out of output tokens mid-response "
+                "if this was a forced submit_candidates call with many candidates."
+            )
 
         tool_results = []
         submitted = None
