@@ -196,6 +196,7 @@ def find_accounts(
 
     messages = [{"role": "user", "content": request}]
     search_count = 0
+    seen_urls = set()
 
     for _ in range(max_turns):
         # Once the search budget is spent, force the model to submit --
@@ -242,7 +243,8 @@ def find_accounts(
                 else:
                     search_count += 1
                     content = run_exa_search(
-                        exa, block.input.get("query", territory), num_results=EXA_NUM_RESULTS
+                        exa, block.input.get("query", territory),
+                        num_results=EXA_NUM_RESULTS, seen_urls=seen_urls,
                     )
                 tool_results.append(
                     {"type": "tool_result", "tool_use_id": block.id, "content": content}
@@ -256,11 +258,11 @@ def find_accounts(
                 key = (c.get("name") or "").strip().lower()
                 if key and key not in seen_names:
                     c["source_url"] = strip_linkedin(c.get("source_url"))
-                    # No source_url means no specific page backs this claim --
-                    # indistinguishable from a hallucination once it can't be
-                    # clicked and checked, so it's dropped rather than returned
-                    # as a lower-confidence result.
-                    if not c["source_url"]:
+                    # Grounding check: the cited source_url must be a URL Exa
+                    # actually returned during this run, not just a plausible
+                    # string the model wrote. Catches the case a plain
+                    # non-null check can't -- a real-looking but never-shown URL.
+                    if not c["source_url"] or c["source_url"] not in seen_urls:
                         continue
                     seen_names.add(key)
                     deduped.append(c)
