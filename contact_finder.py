@@ -43,6 +43,10 @@ can't confirm a real email or phone for someone, use null for that field
 — a person is still worth reporting with just a name/title if that's all
 you found; the caller will filter incomplete contacts.
 
+Also report source_url for each person: the real URL (from your search
+results) where you found their name/title/contact info, so a human can
+click through and verify. Never invent a URL.
+
 Use max 4 searches. Report real people only — never invent a name."""
 
 WEB_SEARCH_TOOL = {
@@ -83,8 +87,12 @@ SUBMIT_TOOL = {
                             "type": ["string", "null"],
                             "description": "Only if directly confirmed in a search result, else null.",
                         },
+                        "source_url": {
+                            "type": ["string", "null"],
+                            "description": "Real URL where this person's info was found, or null.",
+                        },
                     },
-                    "required": ["name", "title", "email", "phone"],
+                    "required": ["name", "title", "email", "phone", "source_url"],
                 },
             }
         },

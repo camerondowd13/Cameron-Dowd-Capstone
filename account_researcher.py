@@ -68,7 +68,12 @@ SAME single company. Disambiguation rules:
 - If you cannot confidently settle on one company — name is generic, no
   domain given, and results are split across clearly unrelated businesses
   with no clear leader — return null for ALL 6 fields. Reporting confident
-  facts about the wrong company is worse than returning nothing."""
+  facts about the wrong company is worse than returning nothing.
+
+Also report sources: a list of the real URLs (from your search results)
+that back up your findings, so a human can click through and verify.
+Never invent a URL — only include ones that actually appeared in a
+web_search result."""
 
 WEB_SEARCH_TOOL = {
     "name": "web_search",
@@ -108,8 +113,13 @@ SUBMIT_TOOL = {
                 "enum": VALID_INDUSTRIES + ["other", None],
                 "description": "Primary business category, for ICP scoring.",
             },
+            "sources": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Real URLs from search results backing up the findings above.",
+            },
         },
-        "required": FIELDS + ["employee_count", "industry_category"],
+        "required": FIELDS + ["employee_count", "industry_category", "sources"],
     },
 }
 
@@ -201,6 +211,7 @@ def research_account(account_name: str, domain: str | None = None) -> dict:
             result = {field: clean_nullish(submitted.get(field)) for field in FIELDS}
             result["employee_count"] = submitted.get("employee_count")
             result["meets_icp"] = _compute_meets_icp(submitted, result["buying_triggers"])
+            result["sources"] = submitted.get("sources", [])
             return result
 
         messages.append({"role": "user", "content": tool_results})

@@ -45,6 +45,11 @@ guess a number. A candidate below the requested minimum size can still be
 included ONLY if it has a real, specific buying_trigger — never include
 an undersized company with a null trigger.
 
+For every candidate, also report source_url: the exact URL (from your
+search results) that backs up the buying_trigger claim (or, if there's no
+trigger, any URL confirming the company/location/size). This must be a
+real URL that appeared in a web_search result — never invent one.
+
 Use max 4 searches. Return real companies only — NEVER invent a company
 that didn't actually show up in your search results. If you find fewer
 than the requested number, return fewer — never pad the list to hit the
@@ -96,8 +101,12 @@ SUBMIT_TOOL = {
                                 "with no known trigger."
                             ),
                         },
+                        "source_url": {
+                            "type": ["string", "null"],
+                            "description": "Real URL from a search result backing up this candidate, or null.",
+                        },
                     },
-                    "required": ["name", "location", "employee_count", "buying_trigger"],
+                    "required": ["name", "location", "employee_count", "buying_trigger", "source_url"],
                 },
             }
         },
