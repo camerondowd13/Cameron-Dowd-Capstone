@@ -22,7 +22,7 @@ from dotenv import load_dotenv
 from exa_py import Exa
 
 from icp import TARGET_TITLES
-from search_utils import clean_nullish, run_exa_search
+from search_utils import clean_nullish, run_exa_search, strip_linkedin
 
 load_dotenv(".env.local")
 
@@ -135,11 +135,22 @@ def find_contacts(
     search_count = 0
 
     for _ in range(MAX_TURNS):
+        # Once the search budget is spent, force the model to submit --
+        # a text-only nudge alone isn't reliable (it can keep calling
+        # web_search past the limit instead of wrapping up).
+        if search_count >= MAX_SEARCHES:
+            tools = [SUBMIT_TOOL]
+            tool_choice = {"type": "tool", "name": "submit_contacts"}
+        else:
+            tools = [WEB_SEARCH_TOOL, SUBMIT_TOOL]
+            tool_choice = {"type": "auto"}
+
         response = client.messages.create(
             model=MODEL,
             max_tokens=1536,
             system=SYSTEM_PROMPT,
-            tools=[WEB_SEARCH_TOOL, SUBMIT_TOOL],
+            tools=tools,
+            tool_choice=tool_choice,
             messages=messages,
         )
         messages.append({"role": "assistant", "content": response.content})
@@ -177,6 +188,8 @@ def find_contacts(
 
         if submitted is not None:
             reachable = [c for c in submitted if _is_reachable(c)]
+            for c in reachable:
+                c["source_url"] = strip_linkedin(c.get("source_url"))
             return reachable[:limit]
 
         messages.append({"role": "user", "content": tool_results})

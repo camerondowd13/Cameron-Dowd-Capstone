@@ -87,7 +87,7 @@ def find_accounts_route():
             max_size=body.get("max_size", account_finder.MAX_SIZE),
             city=body.get("city"),
             industry=body.get("industry"),
-            limit=body.get("limit", 5),
+            limit=body.get("limit", account_finder.DEFAULT_LIMIT),
         )
         return jsonify(candidates=candidates)
     except ValueError as e:

@@ -20,7 +20,7 @@ from dotenv import load_dotenv
 from exa_py import Exa
 
 from icp import VALID_INDUSTRIES, meets_size
-from search_utils import clean_nullish, run_exa_search
+from search_utils import clean_nullish, run_exa_search, strip_linkedin_from_list
 
 load_dotenv(".env.local")
 
@@ -165,11 +165,22 @@ def research_account(account_name: str, domain: str | None = None) -> dict:
     search_count = 0
 
     for _ in range(MAX_TURNS):
+        # Once the search budget is spent, force the model to submit --
+        # a text-only nudge alone isn't reliable (it can keep calling
+        # web_search past the limit instead of wrapping up).
+        if search_count >= MAX_SEARCHES:
+            tools = [SUBMIT_TOOL]
+            tool_choice = {"type": "tool", "name": "submit_account_research"}
+        else:
+            tools = [WEB_SEARCH_TOOL, SUBMIT_TOOL]
+            tool_choice = {"type": "auto"}
+
         response = client.messages.create(
             model=MODEL,
             max_tokens=1536,
             system=SYSTEM_PROMPT,
-            tools=[WEB_SEARCH_TOOL, SUBMIT_TOOL],
+            tools=tools,
+            tool_choice=tool_choice,
             messages=messages,
         )
         messages.append({"role": "assistant", "content": response.content})
@@ -211,7 +222,7 @@ def research_account(account_name: str, domain: str | None = None) -> dict:
             result = {field: clean_nullish(submitted.get(field)) for field in FIELDS}
             result["employee_count"] = submitted.get("employee_count")
             result["meets_icp"] = _compute_meets_icp(submitted, result["buying_triggers"])
-            result["sources"] = submitted.get("sources", [])
+            result["sources"] = strip_linkedin_from_list(submitted.get("sources", []))
             return result
 
         messages.append({"role": "user", "content": tool_results})

@@ -12,8 +12,24 @@ def clean_nullish(value):
     return value
 
 
-def run_exa_search(exa: Exa, query: str, include_domains=None) -> str:
-    kwargs = dict(type="neural", num_results=5, contents={"text": {"maxCharacters": 800}})
+def strip_linkedin(url):
+    """PRD hard constraint: no LinkedIn. Excluding it from Exa's search
+    results isn't enough on its own -- the model can still pick up a
+    linkedin.com URL embedded in another page's text (e.g. a bio page
+    linking to someone's profile) and cite it as a source. Enforce the
+    constraint in code on every URL that leaves this codebase, not just
+    at the search-request level."""
+    if url and "linkedin.com" in url.lower():
+        return None
+    return url
+
+
+def strip_linkedin_from_list(urls):
+    return [u for u in (urls or []) if strip_linkedin(u) is not None]
+
+
+def run_exa_search(exa: Exa, query: str, include_domains=None, num_results: int = 5) -> str:
+    kwargs = dict(type="neural", num_results=num_results, contents={"text": {"maxCharacters": 800}})
     if include_domains:
         kwargs["include_domains"] = include_domains
     else:
