@@ -45,10 +45,17 @@ def health():
 
 @app.get("/debug-env")
 def debug_env():
-    # TEMPORARY diagnostic -- reports only key LENGTHS, never values, so it's
-    # safe to leave reachable while debugging. Remove once keys are confirmed.
+    # TEMPORARY diagnostic -- reports only length + a one-way SHA256 hash of
+    # each value, never the value itself. A hash can't be reversed back into
+    # the real key, so this is safe to leave reachable while debugging.
+    # Remove once keys are confirmed correct.
+    import hashlib
     keys = ["ANTHROPIC_API_KEY", "EXA_API_KEY", "COMPOSIO_API_KEY", "SERVICE_API_KEY"]
-    return jsonify({k: len(os.getenv(k) or "") for k in keys})
+    result = {}
+    for k in keys:
+        v = os.getenv(k) or ""
+        result[k] = {"length": len(v), "sha256": hashlib.sha256(v.encode()).hexdigest()}
+    return jsonify(result)
 
 
 @app.post("/run")
