@@ -169,6 +169,107 @@ SUBMIT_TOOL = {
 }
 
 
+VERIFY_TOOL = {
+    "name": "submit_verification",
+    "description": "Submit verified details extracted strictly from the provided search text.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "companies": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string"},
+                        "employee_count": {"type": ["integer", "null"]},
+                        "website": {"type": ["string", "null"]},
+                        "contacts_seen": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {"type": "string"},
+                                    "title": {"type": ["string", "null"]},
+                                },
+                                "required": ["name", "title"],
+                            },
+                        },
+                    },
+                    "required": ["name", "employee_count", "website", "contacts_seen"],
+                },
+            }
+        },
+        "required": ["companies"],
+    },
+}
+
+# Stage 1 (broad discovery, many companies at once) reliably finds a trigger
+# for a company, but employee_count/website/contacts_seen tend to live on
+# different pages than whatever surfaced the trigger -- a handful of broad
+# queries covering 20 companies rarely happens to hit all three for the same
+# one. Stage 2 goes deep on each surviving candidate individually: dedicated
+# searches per company, then one batched extraction call (not one call per
+# company, to keep cost/latency down) to actually fill the gaps.
+MAX_VERIFY_CANDIDATES_MULTIPLIER = 3  # cap stage 2 cost: verify at most limit*3 candidates
+
+
+def _verify_candidate_details(client, exa, candidates, seen_urls, search_text_corpus):
+    to_verify = [
+        c for c in candidates
+        if c.get("employee_count") is None or not c.get("website") or not c.get("contacts_seen")
+    ]
+    if not to_verify:
+        return candidates
+
+    per_company_text = {}
+    for c in to_verify:
+        name = c["name"]
+        blocks = []
+        for query in (f"{name} official website", f"{name} leadership team employees staff"):
+            text = run_exa_search(exa, query, num_results=5, seen_urls=seen_urls)
+            search_text_corpus.append(text)
+            blocks.append(text)
+        per_company_text[name] = "\n\n".join(blocks)
+
+    verify_prompt = (
+        "For each company below, using ONLY the search results provided for "
+        "it, report employee_count (integer or null), website (the official "
+        "homepage URL, exactly as it appears in the results, or null), and "
+        "contacts_seen (list of real {name, title} people found in the "
+        "results, or empty list). Never guess -- if the given text doesn't "
+        "show it, use null/empty, even if you think you know the answer "
+        "from general knowledge.\n\n"
+    )
+    for name, text in per_company_text.items():
+        verify_prompt += f"=== {name} ===\n{text}\n\n"
+
+    response = client.messages.create(
+        model=MODEL,
+        max_tokens=8192,
+        system="You extract structured company facts strictly from the search text you're given. Never use outside knowledge, never guess.",
+        tools=[VERIFY_TOOL],
+        tool_choice={"type": "tool", "name": "submit_verification"},
+        messages=[{"role": "user", "content": verify_prompt}],
+    )
+    result_block = next((b for b in response.content if b.type == "tool_use"), None)
+    verified_by_name = {
+        v["name"]: v for v in (result_block.input.get("companies", []) if result_block else [])
+    }
+
+    for c in to_verify:
+        v = verified_by_name.get(c["name"])
+        if not v:
+            continue
+        if c.get("employee_count") is None:
+            c["employee_count"] = v.get("employee_count")
+        if not c.get("website"):
+            c["website"] = v.get("website")
+        if not c.get("contacts_seen"):
+            c["contacts_seen"] = v.get("contacts_seen") or []
+
+    return candidates
+
+
 def _within_size_range(company: dict, min_size: int, max_size: int) -> bool:
     """Enforce the ICP size range in code, with the PRD's sub-min exception:
     a company below min_size still qualifies if it has a real buying_trigger.
@@ -296,8 +397,20 @@ def find_accounts(
                 )
 
         if submitted is not None:
-            corpus = "\n".join(search_text_corpus).lower()
-            seen_domains = {_domain(u) for u in seen_urls if _domain(u)}
+            def _ground(candidates_list):
+                """(Re)apply grounding to website + contacts_seen against the
+                CURRENT seen_urls/search_text_corpus -- called again after
+                stage 2 adds more search data, so newly-verified facts get
+                checked too, not just what stage 1 opportunistically found."""
+                corpus = "\n".join(search_text_corpus).lower()
+                seen_domains = {_domain(u) for u in seen_urls if _domain(u)}
+                for c in candidates_list:
+                    website = strip_linkedin(c.get("website"))
+                    c["website"] = website if website and _domain(website) in seen_domains else None
+                    c["contacts_seen"] = [
+                        p for p in (c.get("contacts_seen") or [])
+                        if (p.get("name") or "").strip().lower() in corpus
+                    ]
 
             filtered = [c for c in submitted if _within_size_range(c, min_size, max_size)]
             deduped = []
@@ -312,28 +425,22 @@ def find_accounts(
                     # non-null check can't -- a real-looking but never-shown URL.
                     if not c["source_url"] or c["source_url"] not in seen_urls:
                         continue
-
-                    # website: grounded at the domain level (the exact homepage
-                    # URL may never appear verbatim in results, but its domain
-                    # must match something Exa actually returned).
-                    website = strip_linkedin(c.get("website"))
-                    if not website or _domain(website) not in seen_domains:
-                        c["website"] = None
-                    else:
-                        c["website"] = website
-
-                    # contacts_seen: each name must actually appear in the raw
-                    # search text this run saw -- not just trusted as reported.
-                    grounded_contacts = []
-                    for person in c.get("contacts_seen") or []:
-                        name = (person.get("name") or "").strip()
-                        if name and name.lower() in corpus:
-                            grounded_contacts.append(person)
-                    c["contacts_seen"] = grounded_contacts
-
                     seen_names.add(key)
                     deduped.append(c)
-            return deduped[:limit]
+
+            _ground(deduped)
+
+            # Stage 2: go deep on each surviving candidate (capped, to bound
+            # cost) to fill in whatever stage 1's broad sweep missed.
+            to_verify_cap = deduped[: limit * MAX_VERIFY_CANDIDATES_MULTIPLIER]
+            _verify_candidate_details(client, exa, to_verify_cap, seen_urls, search_text_corpus)
+            _ground(to_verify_cap)  # re-check stage 2's additions against the now-larger corpus
+
+            qualified = [
+                c for c in to_verify_cap
+                if c.get("employee_count") is not None and c.get("website") and c.get("contacts_seen")
+            ]
+            return qualified[:limit]
 
         messages.append({"role": "user", "content": tool_results})
 
