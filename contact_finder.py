@@ -35,6 +35,15 @@ Given a company, use web_search to find real people in decision-making
 roles — prioritize titles like {", ".join(TARGET_TITLES)}, or others
 plausibly involved in purchasing finance/AP software.
 
+If a known official domain is given: your first 2 searches are locked to
+that company's own site. Use them on the pages most likely to actually
+list contact info -- queries like "team", "leadership", "about us",
+"contact us", "staff directory". Company sites are the best source for
+directly-listed emails/phones, better than general open-web search. Only
+after those 2 searches should you broaden to the open web (press
+releases, conference bios, public filings) for names you still need
+contact info on.
+
 For each person, only report an email or phone number if you found it
 directly in a search result (company "team"/"about" page, press release,
 conference bio, public filing, etc.) — NEVER guess an email pattern
@@ -52,9 +61,11 @@ Use max 4 searches. Report real people only — never invent a name."""
 WEB_SEARCH_TOOL = {
     "name": "web_search",
     "description": (
-        "Search the web via Exa. Use queries like '<company> CFO', "
-        "'<company> leadership team', '<company> AP Manager email', "
-        "'<company> press release [name] [title]'."
+        "Search the web via Exa. When a domain is locked (your first 2 "
+        "searches, if a domain is known), use site-focused queries like "
+        "'<company> leadership team', '<company> about us', '<company> "
+        "contact us staff directory'. Once open, broaden to "
+        "'<company> CFO', '<company> press release [name] [title]'."
     ),
     "input_schema": {
         "type": "object",
@@ -129,7 +140,11 @@ def find_contacts(
     titles = target_titles or TARGET_TITLES
     request = f"Find contacts at: {account_name}\nTarget titles: {', '.join(titles)}"
     if domain:
-        request += f"\nKnown official domain: {domain}. Confirm identity against this domain."
+        request += (
+            f"\nKnown official domain: {domain}. Your first 2 searches are locked "
+            "to this domain -- use them on the company's own team/leadership/"
+            "contact pages before broadening to the open web."
+        )
 
     messages = [{"role": "user", "content": request}]
     search_count = 0
@@ -178,7 +193,7 @@ def find_contacts(
                     )
                 else:
                     search_count += 1
-                    lock_domains = [domain] if (domain and search_count == 1) else None
+                    lock_domains = [domain] if (domain and search_count <= 2) else None
                     content = run_exa_search(
                         exa, block.input.get("query", account_name), lock_domains
                     )
