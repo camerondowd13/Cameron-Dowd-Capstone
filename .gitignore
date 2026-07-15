@@ -4,3 +4,4 @@ node_modules
 .venv
 __pycache__
 demo.html
+SESSION_NOTES.md
