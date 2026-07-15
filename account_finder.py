@@ -15,22 +15,56 @@ import os
 import sys
 from urllib.parse import urlparse
 
+import requests
 from anthropic import Anthropic
 from dotenv import load_dotenv
 from exa_py import Exa
 
 import contact_finder
+from enrich_pipeline import load_supabase_config
 from icp import MAX_SIZE, MIN_SIZE, VALID_INDUSTRIES
 from search_utils import run_exa_search, strip_linkedin
 
 
 def _domain(url: str) -> str:
     """Normalize a URL down to its bare domain for comparison (strips
-    'www.', scheme, path)."""
+    'www.', scheme, path). Handles both full URLs (Exa's format) and bare
+    domains with no scheme (Supabase's stored format, e.g. 'company.com'
+    with no 'https://') -- urlparse treats a schemeless string as a path,
+    not a netloc, so bare domains need the scheme added first."""
     if not url:
         return ""
+    if "//" not in url:
+        url = "//" + url
     netloc = urlparse(url).netloc.lower()
     return netloc[4:] if netloc.startswith("www.") else netloc
+
+
+def _fetch_known_companies() -> tuple[set, set]:
+    """Every company already in the Supabase accounts table, regardless of
+    status -- so AccountFinder never resurfaces one you or your SDR are
+    already working. Returns (normalized_names, domains). Best-effort: on
+    any failure (Supabase unreachable, config missing), returns empty sets
+    rather than raising -- dedup is a nice-to-have, not something that
+    should break discovery if Supabase is temporarily down."""
+    try:
+        supabase_url, supabase_key = load_supabase_config()
+        resp = requests.get(
+            f"{supabase_url}/rest/v1/accounts",
+            params={"select": "name,website"},
+            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"},
+            timeout=10,
+        )
+        resp.raise_for_status()
+        rows = resp.json()
+    except Exception as e:
+        print(f"Warning: could not fetch known accounts from Supabase for dedup: {e}", file=sys.stderr)
+        return set(), set()
+
+    names = {(r.get("name") or "").strip().lower() for r in rows if r.get("name")}
+    domains = {_domain(r["website"]) for r in rows if r.get("website")}
+    domains.discard("")
+    return names, domains
 
 load_dotenv(".env.local")
 
@@ -321,6 +355,8 @@ def find_accounts(
     client = Anthropic(api_key=anthropic_key)
     exa = Exa(exa_key)
 
+    known_names, known_domains = _fetch_known_companies()
+
     search_budget = _search_budget(limit)
     max_turns = search_budget + 2  # spare turns for the "limit reached" nudge + final submit
     system_prompt = _build_system_prompt(search_budget)
@@ -431,9 +467,20 @@ def find_accounts(
 
             _ground(deduped)
 
+            # Dedup against Supabase: never resurface a company already in
+            # the accounts table (any status) -- avoids Cameron/his SDR
+            # duplicating work on a company already being handled. Checked
+            # early (before stages 2-3) so no verification cost is wasted
+            # on companies we're about to throw away anyway.
+            not_already_known = [
+                c for c in deduped
+                if (c.get("name") or "").strip().lower() not in known_names
+                and _domain(c.get("website") or "") not in known_domains
+            ]
+
             # Stage 2: go deep on each surviving candidate (capped, to bound
             # cost) to fill in whatever stage 1's broad sweep missed.
-            to_verify_cap = deduped[: limit * MAX_VERIFY_CANDIDATES_MULTIPLIER]
+            to_verify_cap = not_already_known[: limit * MAX_VERIFY_CANDIDATES_MULTIPLIER]
             _verify_candidate_details(client, exa, to_verify_cap, seen_urls, search_text_corpus)
             _ground(to_verify_cap)  # re-check stage 2's additions against the now-larger corpus
 
