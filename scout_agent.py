@@ -273,6 +273,8 @@ def run() -> None:
 
         added = 0
         for item in items:
+            if not isinstance(item, dict):
+                continue
             link = item.get("link")
             if not link or link in seen_links:
                 continue
