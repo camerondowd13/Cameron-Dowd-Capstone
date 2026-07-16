@@ -4,14 +4,17 @@ decision-makers — name, title, email, phone.
 
 Per the PRD, a contact is only valid if BOTH email and phone are found;
 one without the other is a dead end and is dropped in code (never
-returned as partial). This is the honest caveat: backed by Exa (general
-web search), not a dedicated contact-data provider (Apollo/ZoomInfo/PDL).
-Emails are sometimes inferable from public bios/press releases; direct
-phone numbers for a named individual are rarely published on the open
-web, so expect this to return few or zero contacts for many companies —
-that's a real limitation of the data source, not a bug. If hit rate is
-too low in practice, that's the signal to revisit the "bring a dedicated
-provider" path instead.
+returned as partial).
+
+First choice: Apollo (apollo_client.py), when APOLLO_API_KEY is set and a
+domain is known -- this is the "bring a dedicated provider" path the old
+version of this docstring flagged as the fix for a low real-contact hit
+rate on the open web. Falls back to the Exa+Claude web search below
+whenever Apollo isn't configured, errors, or simply doesn't have a
+reachable contact for this company (e.g. trial credits exhausted) --
+same honest caveat as before applies to that fallback: direct phone
+numbers for a named individual are rarely published on the open web, so
+expect it to return few or zero contacts on its own.
 """
 import json
 import os
@@ -21,12 +24,13 @@ from anthropic import Anthropic
 from dotenv import load_dotenv
 from exa_py import Exa
 
+import apollo_client
 from icp import TARGET_TITLES
 from search_utils import clean_nullish, run_exa_search, strip_linkedin
 
 load_dotenv(".env.local")
 
-MODEL = "claude-sonnet-5"
+MODEL = "claude-opus-4-8"
 MAX_SEARCHES = 4
 MAX_TURNS = MAX_SEARCHES + 2  # spare turns for the "limit reached" nudge + final submit
 
@@ -140,6 +144,60 @@ def _is_reachable(contact: dict) -> bool:
     return bool(clean_nullish(contact.get("email"))) and bool(clean_nullish(contact.get("phone")))
 
 
+def _rank_by_title(person: dict, titles: list[str]) -> int:
+    title = (person.get("title") or "").lower()
+    for i, t in enumerate(titles):
+        if t.lower() in title:
+            return i
+    return len(titles)
+
+
+def _find_contacts_via_apollo(domain: str, titles: list[str], limit: int) -> list[dict]:
+    """Apollo-first contact lookup: real named people, ranked by title
+    match, with a synchronously-revealed verified email. Phone reveal
+    (async, credits-limited -- see apollo_client.py) is only attempted for
+    the single best-ranked match per company, to conserve Apollo's
+    separately-metered mobile-reveal credits across a whole run rather
+    than spend them 1-for-1 on every person searched.
+
+    Same PRD bar as the Exa path (_is_reachable: both email AND phone
+    required) -- a person with only one of the two is dropped here too,
+    not returned as partial."""
+    people = apollo_client.search_people(domain, titles, per_page=limit * 2)
+    if not people:
+        return []
+    people.sort(key=lambda p: _rank_by_title(p, titles))
+
+    contacts = []
+    for i, person in enumerate(people):
+        if len(contacts) >= limit:
+            break
+        person_id = person.get("id")
+        if not person_id:
+            continue
+
+        enriched = apollo_client.enrich_person(person_id)
+        email = enriched["email"]
+        if not email:
+            continue
+
+        phone = None
+        if i == 0 and apollo_client.request_phone_reveal(person_id):
+            phone = apollo_client.poll_phone_reveal(person_id)
+        if not phone:
+            continue
+
+        contacts.append({
+            "name": enriched["name"],
+            "title": person.get("title"),
+            "email": email,
+            "phone": phone,
+            "source_url": f"https://app.apollo.io/#/people/{person_id}",
+        })
+
+    return contacts
+
+
 def find_contacts(
     account_name: str,
     domain: str | None = None,
@@ -160,6 +218,23 @@ def find_contacts(
     a specific person are rarely published, but a company's main
     phone/email almost always is.
     """
+    titles = target_titles or TARGET_TITLES
+
+    if domain and apollo_client.APOLLO_API_KEY:
+        try:
+            apollo_contacts = _find_contacts_via_apollo(domain, titles, limit)
+        except Exception as e:
+            # Apollo being down/out-of-credits/misconfigured shouldn't
+            # block contact-finding entirely -- fall through to the Exa
+            # path below, same as when Apollo simply finds nothing.
+            print(f"Warning: Apollo lookup failed for {account_name!r}, falling back to web search: {e}", file=sys.stderr)
+            apollo_contacts = []
+        if apollo_contacts:
+            return {"contacts": apollo_contacts, "general_office": None}
+        # Apollo found nothing reachable -- fall through to Exa+Claude,
+        # which also covers general_office (Apollo's People Search has no
+        # equivalent to a company's main line/inbox).
+
     anthropic_key = os.getenv("ANTHROPIC_API_KEY")
     exa_key = os.getenv("EXA_API_KEY")
     if not anthropic_key:
@@ -170,7 +245,6 @@ def find_contacts(
     client = Anthropic(api_key=anthropic_key)
     exa = Exa(exa_key)
 
-    titles = target_titles or TARGET_TITLES
     request = f"Find contacts at: {account_name}\nTarget titles: {', '.join(titles)}"
     if domain:
         request += (

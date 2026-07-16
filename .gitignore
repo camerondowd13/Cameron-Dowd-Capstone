@@ -5,3 +5,4 @@ node_modules
 __pycache__
 demo.html
 SESSION_NOTES.md
+*.log

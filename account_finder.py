@@ -68,7 +68,7 @@ def _fetch_known_companies() -> tuple[set, set]:
 
 load_dotenv(".env.local")
 
-MODEL = "claude-sonnet-5"
+MODEL = "claude-opus-4-8"
 DEFAULT_LIMIT = 20
 EXA_NUM_RESULTS = 8  # per search -- up from 5, so each query pulls more raw material
 MIN_SEARCH_BUDGET = 4
@@ -280,15 +280,25 @@ def _verify_candidate_details(client, exa, candidates, seen_urls, search_text_co
 
     response = client.messages.create(
         model=MODEL,
-        max_tokens=8192,
+        # 16000 (not the old 8192) -- with limit*3 candidates batched into one
+        # call (up to 30 at limit=10), 8192 was too tight and risked truncating
+        # mid-JSON, which surfaced as "string indices must be integers" further
+        # down when a cut-off companies[] entry parsed as something other than
+        # a full object. 16000 is the safe non-streaming ceiling.
+        max_tokens=16000,
         system="You extract structured company facts strictly from the search text you're given. Never use outside knowledge, never guess.",
         tools=[VERIFY_TOOL],
         tool_choice={"type": "tool", "name": "submit_verification"},
         messages=[{"role": "user", "content": verify_prompt}],
     )
     result_block = next((b for b in response.content if b.type == "tool_use"), None)
+    # Defensive: even with more headroom, a truncated or malformed response
+    # could still produce a non-dict entry -- skip it rather than crash the
+    # whole batch (better to lose one company's verification than all of them).
     verified_by_name = {
-        v["name"]: v for v in (result_block.input.get("companies", []) if result_block else [])
+        v["name"]: v
+        for v in (result_block.input.get("companies", []) if result_block else [])
+        if isinstance(v, dict) and "name" in v
     }
 
     for c in to_verify:
@@ -411,7 +421,17 @@ def find_accounts(
                 continue
 
             if block.name == "submit_candidates":
-                submitted = block.input.get("companies", [])
+                # Defensive: Claude's tool call is expected to return each
+                # entry as an object per the schema, but (as seen with this
+                # same tool's stage-2 counterpart, submit_verification) it can
+                # occasionally return a malformed entry -- e.g. a plain
+                # string -- which would otherwise crash every c["..."] /
+                # c.get("...") access below. Skip anything that isn't a dict
+                # with a name, rather than trusting the schema was honored.
+                submitted = [
+                    c for c in block.input.get("companies", [])
+                    if isinstance(c, dict) and c.get("name")
+                ]
                 tool_results.append(
                     {"type": "tool_result", "tool_use_id": block.id, "content": "Received."}
                 )
@@ -446,7 +466,7 @@ def find_accounts(
                     c["website"] = website if website and _domain(website) in seen_domains else None
                     c["contacts_seen"] = [
                         p for p in (c.get("contacts_seen") or [])
-                        if (p.get("name") or "").strip().lower() in corpus
+                        if isinstance(p, dict) and (p.get("name") or "").strip().lower() in corpus
                     ]
 
             filtered = [c for c in submitted if _within_size_range(c, min_size, max_size)]
@@ -500,7 +520,15 @@ def find_accounts(
             # cold-call workflow, just not a direct dial.
             fully_qualified = []
             for c in stage2_qualified:
-                result = contact_finder.find_contacts(c["name"], domain=_domain(c["website"]))
+                try:
+                    result = contact_finder.find_contacts(c["name"], domain=_domain(c["website"]))
+                except Exception as e:
+                    # A single company's contact lookup failing (e.g. the model
+                    # not calling submit_contacts within its turn budget)
+                    # shouldn't lose every other already-verified candidate --
+                    # skip just this one and keep going.
+                    print(f"Warning: find_contacts failed for {c['name']!r}: {e}", file=sys.stderr)
+                    continue
                 # Prefer any fully-verified direct contact if one happens to
                 # exist, but don't require it -- general_office satisfies
                 # "reachable" too.

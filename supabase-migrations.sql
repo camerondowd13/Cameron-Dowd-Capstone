@@ -43,3 +43,67 @@ insert into lists (name) values ('Sample Pipeline')
 
 update accounts set list_id = (select id from lists order by created_at asc limit 1)
   where list_id is null;
+
+
+-- ---------------------------------------------------------------
+-- ProspectingAgent: contact_name/contact_title/contact_phone/contact_email
+-- were NOT NULL, which only fits a fully-named + fully-verified contact.
+-- AccountFinder's redefined "qualified" bar (see git log: "Redefine
+-- 'qualified' to what's actually achievable without a paid provider")
+-- also accepts a general_office fallback (real phone/email, no named
+-- person) and a contacts_seen-only match (real named person, no confirmed
+-- phone/email) -- both legitimately leave some of these 4 columns null.
+-- Empirically, general_office is the COMMON case, not the exception (0/3
+-- test candidates had a fully-verified named contact), so the schema
+-- needs to support it, not just the rare full-verification case.
+-- Run this block once.
+-- ---------------------------------------------------------------
+
+alter table accounts alter column contact_name drop not null;
+alter table accounts alter column contact_title drop not null;
+alter table accounts alter column contact_phone drop not null;
+alter table accounts alter column contact_email drop not null;
+
+
+-- ---------------------------------------------------------------
+-- ProspectingAgent: status has a CHECK constraint limiting it to the 6
+-- original board.html values (new/researching/contacted/in_conversation/
+-- opportunity/closed) -- 'partial' (used when a company fails partway
+-- through processing, so whatever was gathered still gets saved instead
+-- of silently lost) was rejected by the DB even though board.html's
+-- dropdown already lists it. Run this block once.
+-- ---------------------------------------------------------------
+
+alter table accounts drop constraint if exists accounts_status_check;
+alter table accounts add constraint accounts_status_check
+  check (status in ('new', 'partial', 'researching', 'contacted', 'in_conversation', 'opportunity', 'closed'));
+
+
+-- ---------------------------------------------------------------
+-- Apollo phone reveal: Apollo's People API only delivers a revealed
+-- mobile/direct-dial number asynchronously, via a webhook POST minutes
+-- after the request (see api/apollo-phone-webhook.js) -- there's no
+-- synchronous response field for it. This table is that webhook's
+-- landing spot; apollo_client.py's poll_phone_reveal() polls it by
+-- apollo_person_id after kicking off a reveal, since the calling script
+-- has no long-running listener of its own to receive the callback
+-- directly. Run this block once.
+-- ---------------------------------------------------------------
+
+create table if not exists apollo_phone_reveals (
+  apollo_person_id text primary key,
+  phone text,
+  raw_payload jsonb,
+  received_at timestamptz not null default now()
+);
+
+-- Same open (anon-key) access pattern as `lists` -- the webhook writes
+-- with the anon key (already public in config.js, nothing new exposed),
+-- and apollo_client.py's poller reads with it too.
+alter table apollo_phone_reveals enable row level security;
+drop policy if exists "public read apollo_phone_reveals" on apollo_phone_reveals;
+create policy "public read apollo_phone_reveals" on apollo_phone_reveals for select using (true);
+drop policy if exists "public write apollo_phone_reveals" on apollo_phone_reveals;
+create policy "public write apollo_phone_reveals" on apollo_phone_reveals for insert with check (true);
+drop policy if exists "public upsert apollo_phone_reveals" on apollo_phone_reveals;
+create policy "public upsert apollo_phone_reveals" on apollo_phone_reveals for update using (true);

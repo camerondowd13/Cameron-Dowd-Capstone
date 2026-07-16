@@ -24,7 +24,7 @@ from search_utils import clean_nullish, run_exa_search, strip_linkedin_from_list
 
 load_dotenv(".env.local")
 
-MODEL = "claude-sonnet-5"
+MODEL = "claude-opus-4-8"
 MAX_SEARCHES = 4
 MAX_TURNS = MAX_SEARCHES + 2  # spare turns for the "limit reached" nudge + final submit
 

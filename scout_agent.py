@@ -23,7 +23,7 @@ from search_utils import run_exa_search
 
 load_dotenv(".env.local")
 
-MODEL = "claude-sonnet-5"
+MODEL = "claude-opus-4-8"
 COMPOSIO_USER_ID = "cameron_test_trimmed"
 GMAIL_TOOLKIT_VERSION = "20260702_01"
 RECIPIENT = "camerondowd13@gmail.com"
