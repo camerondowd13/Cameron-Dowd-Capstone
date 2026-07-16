@@ -1,0 +1,24 @@
+name: Weekly Scout
+
+on:
+  schedule:
+    # 13:00 UTC = 8am Central (CDT, UTC-5). During CST (winter, UTC-6) this
+    # runs at 7am Central instead -- GitHub Actions cron has no timezone
+    # support, so this drifts by an hour twice a year around DST changes.
+    - cron: "0 13 * * 1"
+  workflow_dispatch: {}
+
+jobs:
+  scout:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: python scout_agent.py
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          EXA_API_KEY: ${{ secrets.EXA_API_KEY }}
+          COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
