@@ -788,14 +788,18 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ state: territory, industry: industry || null, title: title || null }),
         });
-        const data = await resp.json();
+        // Parse defensively -- a timed-out/killed function can return a
+        // non-JSON page, which would otherwise throw a cryptic browser error.
+        let data = {};
+        try { data = await resp.json(); } catch { data = {}; }
 
         if (resp.status === 429) {
           resultsEl.innerHTML = `<p class="empty-state">${data.message || "You've hit today's free limit for live searches. Try again tomorrow."}</p>`;
           return;
         }
         if (!resp.ok) {
-          resultsEl.innerHTML = `<p class="empty-state">Something went wrong on our end${data.error ? `: ${data.error}` : ''}. Try again in a moment.</p>`;
+          const detail = data.error ? `: ${data.error}` : ` (status ${resp.status})`;
+          resultsEl.innerHTML = `<p class="empty-state">The search didn't complete${detail}. This usually means it took too long — give it another try.</p>`;
           return;
         }
 
