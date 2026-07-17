@@ -12,6 +12,7 @@ and enrichment independently tunable/debuggable).
 import json
 import math
 import os
+import random
 import sys
 from urllib.parse import urlparse
 
@@ -471,8 +472,18 @@ def _discover_via_apollo(
         if not orgs:
             break  # ran out of pages
 
+    # Shuffle among the top, best-documented candidates so repeated searches
+    # surface DIFFERENT real companies instead of always Apollo's same top 3.
+    # Limited to the top slice (not the whole long tail) so quality and the
+    # qualify-rate stay high -- these are all real, prominent companies, just
+    # in a random order.
+    SHUFFLE_POOL = 15
+    pool = candidates[:SHUFFLE_POOL]
+    random.shuffle(pool)
+    candidates = pool + candidates[SHUFFLE_POOL:]
+
     if trace:
-        console.print(f"[cyan]  -> {len(candidates)} total candidates across {page} page(s)[/cyan]")
+        console.print(f"[cyan]  -> {len(candidates)} total candidates across {page} page(s) (top {min(SHUFFLE_POOL, len(pool))} shuffled)[/cyan]")
         console.rule("[bold blue]RESEARCH — per-candidate ICP + trigger check[/bold blue]")
 
     # Hard cap on how many companies we deeply research + contact-check per
