@@ -472,18 +472,16 @@ def _discover_via_apollo(
         if not orgs:
             break  # ran out of pages
 
-    # Shuffle among the top, best-documented candidates so repeated searches
-    # surface DIFFERENT real companies instead of always Apollo's same top 3.
-    # Limited to the top slice (not the whole long tail) so quality and the
-    # qualify-rate stay high -- these are all real, prominent companies, just
-    # in a random order.
-    SHUFFLE_POOL = 15
-    pool = candidates[:SHUFFLE_POOL]
-    random.shuffle(pool)
-    candidates = pool + candidates[SHUFFLE_POOL:]
-
+    # Deterministic order (no shuffle). Apollo returns organizations roughly
+    # by prominence, and the most prominent companies are the best-documented
+    # -- highest odds of clearing research AND of Apollo having a full,
+    # emailed+phoned contact for them. For a live demo, a repeatable set of
+    # leads that reliably clears every gate beats run-to-run variety, so we
+    # research candidates in Apollo's own ranked order. (Shuffle was the source
+    # of the "2 of 6 qualified" bad runs -- it kept reaching past the strong
+    # top companies into thinner ones that failed research/contact.)
     if trace:
-        console.print(f"[cyan]  -> {len(candidates)} total candidates across {page} page(s) (top {min(SHUFFLE_POOL, len(pool))} shuffled)[/cyan]")
+        console.print(f"[cyan]  -> {len(candidates)} total candidates across {page} page(s) (ranked order, no shuffle)[/cyan]")
         console.rule("[bold blue]RESEARCH — per-candidate ICP + trigger check[/bold blue]")
 
     # Hard cap on how many companies we deeply research + contact-check per
