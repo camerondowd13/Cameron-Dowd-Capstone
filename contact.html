@@ -22,6 +22,7 @@
       <a class="logo" href="index.html"><svg class="logo-mark" viewBox="0 0 64 64" width="26" height="26"><rect width="64" height="64" rx="16" fill="#7c3aed"/><circle cx="32" cy="32" r="4" fill="white"/><circle cx="32" cy="32" r="13" fill="none" stroke="white" stroke-width="3" opacity="0.85"/><circle cx="32" cy="32" r="22" fill="none" stroke="white" stroke-width="3" opacity="0.5"/></svg>Sonar</a>
       <nav class="site-nav">
         <a href="index.html">Home</a>
+        <a href="faq.html">FAQ</a>
         <a href="about.html">About</a>
         <a href="get-in-touch.html">Contact</a>
         <a href="contact.html" class="active nav-cta">Try it free</a>
@@ -115,6 +116,15 @@
           </select>
         </div>
 
+        <div class="field">
+          <label for="employeeCount">Employee count</label>
+          <select id="employeeCount">
+            <option value="1-50">1-50 employees</option>
+            <option value="50-1000" selected>50-1000 employees</option>
+            <option value="1000+">1000+ employees</option>
+          </select>
+        </div>
+
         <button class="btn" id="showMatches">Find my leads</button>
         <span class="note">A state is required — this runs a real live search, so we need at least a territory to search.</span>
       </div>
@@ -145,7 +155,7 @@
 
       <h2 class="section-heading">Example Board</h2>
 
-      <div class="table-wrap">
+      <div class="table-wrap example-table-wrap">
         <table class="kanban-table">
           <thead>
             <tr>
@@ -193,23 +203,10 @@
         </div>
       </div>
 
-      <h2 class="dash-subhead">Recent accounts</h2>
+      <h2 class="dash-subhead">Pipeline — drag a card to change its status</h2>
 
-      <div class="table-wrap">
-        <table class="kanban-table">
-          <thead>
-            <tr>
-              <th>Company</th>
-              <th>Contact</th>
-              <th>Status</th>
-              <th>Verified</th>
-              <th>Created</th>
-            </tr>
-          </thead>
-          <tbody id="dashboardPreviewBody">
-            <tr><td colspan="5"><p class="empty-state">Run a search above to populate this dashboard.</p></td></tr>
-          </tbody>
-        </table>
+      <div class="kanban-board" id="dashboardKanban">
+        <p class="empty-state">Run a search above to populate this board.</p>
       </div>
     </div>
   </section>
@@ -224,11 +221,11 @@
         <h4>Product</h4>
         <a href="index.html">Home</a>
         <a href="contact.html">Try it free</a>
-        <a href="get-in-touch.html">Get in touch</a>
       </div>
       <div class="footer-col">
         <h4>Company</h4>
         <a href="about.html">About</a>
+        <a href="faq.html">FAQ</a>
         <a href="get-in-touch.html">Contact</a>
       </div>
       <div class="footer-col">
@@ -334,8 +331,10 @@
     const tokenDotsEl = document.getElementById('tokenDots');
     const statusLineEl = document.getElementById('statusLine');
     const boardBodyEl = document.getElementById('boardPreviewBody');
-    const dashboardBodyEl = document.getElementById('dashboardPreviewBody');
+    const dashboardKanbanEl = document.getElementById('dashboardKanban');
     const showMatchesBtn = document.getElementById('showMatches');
+
+    const KANBAN_STATUSES = ['new', 'researching', 'contacted', 'in_conversation', 'opportunity', 'closed'];
     const detailModalOverlay = document.getElementById('detailModalOverlay');
     const detailModalTitle = document.getElementById('detailModalTitle');
     const detailModalBody = document.getElementById('detailModalBody');
@@ -603,12 +602,82 @@
       rows.forEach(row => boardBodyEl.appendChild(renderBoardRow(row)));
     }
 
-    // ---- dashboard preview ----
+    // ---- dashboard preview: drag-and-drop kanban ----
+    function renderKanbanCard(row) {
+      const card = document.createElement('div');
+      card.className = 'kanban-card' + (row.isLive ? ' live-row' : '');
+      card.draggable = true;
+      card.dataset.id = row.id;
+
+      const isApproved = row.phoneVerified && row.emailVerified;
+      const verifyBadge = isApproved
+        ? '<span class="verify-badge">✓ verified</span>'
+        : '<span class="verify-badge verify-badge-pending">unverified</span>';
+      const liveTag = row.isLive ? ' <span class="live-badge">live</span>' : '';
+
+      card.innerHTML = `
+        <div class="kanban-card-name">${row.company}${liveTag}</div>
+        <div class="kanban-card-contact">${row.contact || ''}</div>
+        <div class="kanban-card-footer">${verifyBadge}</div>
+      `;
+
+      card.addEventListener('dragstart', (e) => {
+        e.dataTransfer.setData('text/plain', row.id);
+        e.dataTransfer.effectAllowed = 'move';
+        card.classList.add('dragging');
+      });
+      card.addEventListener('dragend', () => card.classList.remove('dragging'));
+      card.addEventListener('click', () => openDetailModal(row));
+
+      return card;
+    }
+
+    function renderDashboardKanban(rows) {
+      dashboardKanbanEl.innerHTML = '';
+      KANBAN_STATUSES.forEach((status) => {
+        const colRows = rows.filter((r) => (KANBAN_STATUSES.includes(r.status) ? r.status : 'new') === status);
+
+        const col = document.createElement('div');
+        col.className = 'kanban-column';
+        col.innerHTML = `
+          <div class="kanban-column-header">
+            <span>${STATUS_LABELS[status] || status}</span>
+            <span class="kanban-column-count">${colRows.length}</span>
+          </div>
+          <div class="kanban-column-body"></div>
+        `;
+        const body = col.querySelector('.kanban-column-body');
+        if (colRows.length === 0) {
+          body.innerHTML = '<p class="empty-state kanban-empty">Drop here</p>';
+        } else {
+          colRows.forEach((row) => body.appendChild(renderKanbanCard(row)));
+        }
+
+        col.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          col.classList.add('drag-over');
+        });
+        col.addEventListener('dragleave', () => col.classList.remove('drag-over'));
+        col.addEventListener('drop', (e) => {
+          e.preventDefault();
+          col.classList.remove('drag-over');
+          const id = e.dataTransfer.getData('text/plain');
+          const row = rows.find((r) => r.id === id);
+          if (row && row.status !== status) {
+            row.status = status;
+            renderAll();
+          }
+        });
+
+        dashboardKanbanEl.appendChild(col);
+      });
+    }
+
     function renderDashboardPreview() {
       const rows = [...liveLeads, ...fillerRows];
 
       if (rows.length === 0) {
-        dashboardBodyEl.innerHTML = '<tr><td colspan="5"><p class="empty-state">Run a search above to populate this dashboard.</p></td></tr>';
+        dashboardKanbanEl.innerHTML = '<p class="empty-state">Run a search above to populate this board.</p>';
         animateCount(document.getElementById('previewStatTotal'), 0, 300);
         animateCount(document.getElementById('previewStatVerified'), 0, 300);
         animateCount(document.getElementById('previewStatActive'), 0, 300);
@@ -625,27 +694,7 @@
       animateCount(document.getElementById('previewStatActive'), activeCount, 700);
       animateCount(document.getElementById('previewStatClosed'), closedCount, 700);
 
-      dashboardBodyEl.innerHTML = '';
-      rows.slice(0, 5).forEach(row => {
-        const isApproved = row.phoneVerified && row.emailVerified;
-        const verifyBadge = isApproved
-          ? '<span class="verify-badge">✓ verified</span>'
-          : '<span class="verify-badge verify-badge-pending">unverified</span>';
-        const statusLabel = STATUS_LABELS[row.status] || row.status;
-        const liveTag = row.isLive ? ' <span class="live-badge">live</span>' : '';
-
-        const tr = document.createElement('tr');
-        tr.className = row.isLive ? 'live-row' : '';
-        tr.innerHTML = `
-          <td><span class="company-link">${row.company}${liveTag}</span></td>
-          <td>${row.contact || ''}</td>
-          <td class="status-cell">${statusLabel}</td>
-          <td>${verifyBadge}</td>
-          <td>${row.createdDaysAgo === 0 ? 'Just now' : formatDate(daysAgoToIso(row.createdDaysAgo))}</td>
-        `;
-        tr.addEventListener('click', () => openDetailModal(row));
-        dashboardBodyEl.appendChild(tr);
-      });
+      renderDashboardKanban(rows);
     }
 
     function renderAll() {
@@ -683,6 +732,11 @@
       const territory = document.getElementById('territory').value;
       const industry = document.getElementById('industry').value;
       const title = document.getElementById('title').value;
+      // Captured but not yet wired into the search -- the backend's size
+      // range (icp.py's MIN_SIZE/MAX_SIZE) is still fixed at 50-1000
+      // regardless of this selection. Visible as a filter now; making it
+      // functional is a separate follow-up.
+      const employeeCount = document.getElementById('employeeCount').value;
 
       if (!territory) {
         resultsEl.innerHTML = '<p class="empty-state">Pick a state to run a live search — it triggers a real agent call, so we need at least a territory.</p>';

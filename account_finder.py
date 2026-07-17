@@ -358,6 +358,7 @@ def _discover_via_apollo(
     limit: int,
     known_names: set,
     known_domains: set,
+    target_titles: list[str] | None = None,
     trace: bool = False,
     events: list | None = None,
 ) -> list[dict]:
@@ -493,7 +494,7 @@ def _discover_via_apollo(
              f"Why it's a good lead right now: {trigger}")
 
         try:
-            contacts = contact_finder.find_contacts(c["name"], domain=c["domain"])
+            contacts = contact_finder.find_contacts(c["name"], domain=c["domain"], target_titles=target_titles)
         except Exception as e:
             if trace:
                 console.print(f"[bold red]⚠ API ERROR — {c['name']}: find_contacts failed: {e}[/bold red]")
@@ -617,7 +618,8 @@ def find_accounts(
     # account_researcher per candidate. If this alone covers `limit`, skip
     # the Claude+Exa discovery loop below entirely.
     apollo_qualified = _discover_via_apollo(
-        state, industry, min_size, max_size, limit, known_names, known_domains, trace=trace, events=events
+        state, industry, min_size, max_size, limit, known_names, known_domains,
+        target_titles=target_titles, trace=trace, events=events
     )
     if len(apollo_qualified) >= limit:
         if events is not None:

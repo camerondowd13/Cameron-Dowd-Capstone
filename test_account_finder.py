@@ -98,6 +98,36 @@ def _mock_org(name, sic_codes, website=None):
     return {"name": name, "sic_codes": sic_codes, "website_url": website or f"https://{name.lower().replace(' ', '')}.com"}
 
 
+def test_discover_via_apollo_passes_target_titles_to_contact_finder(monkeypatch):
+    # Regression test: _discover_via_apollo originally had no target_titles
+    # parameter at all -- a user picking "CTO" on the site had it silently
+    # dropped, since this (now-primary) discovery path never passed it to
+    # contact_finder.find_contacts(), which then searched all 5 default
+    # titles and surfaced whichever ranked highest (usually Founder/CEO).
+    orgs = [_mock_org("Real Construction Co", ["1542"])]
+    monkeypatch.setattr(account_finder.apollo_client, "search_organizations", lambda *a, **k: orgs)
+    monkeypatch.setattr(
+        account_finder.account_researcher, "research_account",
+        lambda name, domain=None: {"meets_icp": True, "employee_count": 100, "buying_triggers": "trigger", "sources": []},
+    )
+
+    received_titles = []
+
+    def fake_find_contacts(name, domain=None, target_titles=None, **kwargs):
+        received_titles.append(target_titles)
+        return {"contacts": [], "general_office": {"phone": "555-0000", "email": "info@test.com"}}
+
+    monkeypatch.setattr(account_finder.contact_finder, "find_contacts", fake_find_contacts)
+
+    account_finder._discover_via_apollo(
+        "Texas", "construction", 50, 1000, limit=1,
+        known_names=set(), known_domains=set(),
+        target_titles=["CTO"],
+    )
+
+    assert received_titles == [["CTO"]]
+
+
 def test_discover_via_apollo_filters_by_sic_and_dedup(monkeypatch):
     orgs = [
         _mock_org("Real Construction Co", ["1542"]),

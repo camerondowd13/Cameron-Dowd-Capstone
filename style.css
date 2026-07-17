@@ -938,6 +938,133 @@ nav.site-nav a.nav-cta:hover {
   }
 }
 
+/* How-it-works pipeline diagram */
+.pipeline-diagram {
+  display: flex;
+  align-items: stretch;
+  gap: 16px;
+  margin: 12px 0 40px;
+}
+
+.pipeline-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  background: rgba(20, 184, 166, 0.08);
+  border: 1px solid rgba(94, 234, 212, 0.35);
+  border-radius: var(--radius);
+  box-shadow: 0 0 24px rgba(45, 212, 191, 0.12);
+  backdrop-filter: blur(4px);
+  padding: 24px 22px;
+}
+
+.pipeline-stage-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(20, 184, 166, 0.14);
+  border: 1px solid rgba(94, 234, 212, 0.45);
+  color: #5eead4;
+  font-family: "Space Grotesk", sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+.pipeline-stage h3 {
+  font-size: 1.05rem;
+  margin: 0 0 6px;
+}
+
+.pipeline-stage-tool {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--accent-dark);
+  margin-bottom: 10px;
+}
+
+.pipeline-stage p {
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.pipeline-arrow {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  color: rgba(94, 234, 212, 0.5);
+  align-self: center;
+}
+
+@media (max-width: 900px) {
+  .pipeline-diagram {
+    flex-direction: column;
+  }
+
+  .pipeline-arrow {
+    align-self: flex-start;
+    margin-left: 18px;
+    transform: rotate(90deg);
+  }
+}
+
+/* Use-cases page */
+.usecase-list {
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+}
+
+.usecase h2 {
+  margin-bottom: 8px;
+}
+
+.usecase > p {
+  color: var(--ink-soft);
+  max-width: 640px;
+  margin-bottom: 20px;
+}
+
+.usecase-example {
+  background: rgba(20, 184, 166, 0.08);
+  border: 1px solid rgba(94, 234, 212, 0.35);
+  border-radius: var(--radius);
+  box-shadow: 0 0 24px rgba(45, 212, 191, 0.12);
+  backdrop-filter: blur(4px);
+  padding: 22px 24px;
+  max-width: 620px;
+}
+
+.usecase-example h4 {
+  margin: 0 0 4px;
+  font-size: 1.02rem;
+}
+
+.usecase-example .meta {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  margin-bottom: 12px;
+}
+
+.usecase-example p {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--ink-soft);
+}
+
+.usecase-example p strong {
+  color: var(--ink);
+}
+
 /* Benefits */
 .benefits-section {
   padding: 24px 0 96px;
@@ -1199,13 +1326,18 @@ nav.site-nav a.nav-cta:hover {
   margin-top: 20px;
 }
 
+/* Matches the homepage hero's .browser-mock/.floating-stat treatment
+   exactly (same rgba values) -- this is the actual "try it free" results
+   section, so it should look like the example the homepage promises,
+   not a generic card style. */
 .result-card {
-  border: 1px solid var(--border);
+  border: 1px solid rgba(94, 234, 212, 0.35);
   border-radius: var(--radius);
   padding: 20px 22px;
   margin-bottom: 14px;
-  background: var(--card-bg);
-  box-shadow: var(--shadow);
+  background: rgba(20, 184, 166, 0.08);
+  box-shadow: 0 0 24px rgba(45, 212, 191, 0.15), inset 0 0 18px rgba(45, 212, 191, 0.06);
+  backdrop-filter: blur(4px);
 }
 
 .result-card h4 {
@@ -1884,6 +2016,8 @@ footer.site {
   background: rgba(20, 184, 166, 0.08);
   border: 1px solid rgba(94, 234, 212, 0.3);
   border-radius: var(--radius);
+  box-shadow: 0 0 24px rgba(45, 212, 191, 0.12);
+  backdrop-filter: blur(4px);
 }
 
 .example-banner p {
@@ -1920,6 +2054,123 @@ footer.site {
   border-radius: var(--radius);
   background: var(--card-bg);
   box-shadow: var(--shadow);
+}
+
+/* Scoped override for contact.html's Board/Dashboard previews only --
+   .table-wrap's base style is shared with admin.html/admin-leads.html,
+   which shouldn't adopt the promotional teal-glass look. This matches the
+   homepage hero's .browser-mock treatment, since these previews ARE the
+   example the homepage promises. */
+.example-table-wrap {
+  border-color: rgba(94, 234, 212, 0.35);
+  background: rgba(20, 184, 166, 0.08);
+  box-shadow: 0 0 24px rgba(45, 212, 191, 0.15), inset 0 0 18px rgba(45, 212, 191, 0.06);
+  backdrop-filter: blur(4px);
+}
+
+/* Dashboard preview: drag-and-drop kanban board */
+.kanban-board {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.kanban-column {
+  flex: 1 0 210px;
+  min-width: 210px;
+  border: 1px solid rgba(94, 234, 212, 0.35);
+  border-radius: var(--radius);
+  background: rgba(20, 184, 166, 0.06);
+  box-shadow: 0 0 24px rgba(45, 212, 191, 0.1);
+  backdrop-filter: blur(4px);
+  padding: 12px;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.kanban-column.drag-over {
+  border-color: var(--accent2);
+  background: rgba(20, 184, 166, 0.14);
+}
+
+.kanban-column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--ink-soft);
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.kanban-column-count {
+  background: var(--bg-alt);
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+
+.kanban-column-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 60px;
+}
+
+.kanban-empty {
+  text-align: center;
+  font-size: 0.78rem;
+  padding: 14px 0;
+  opacity: 0.6;
+}
+
+.kanban-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--card-bg);
+  padding: 10px 12px;
+  cursor: grab;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+
+.kanban-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+.kanban-card.dragging {
+  opacity: 0.4;
+}
+
+.kanban-card-name {
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+
+.kanban-card-contact {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  margin-bottom: 8px;
+}
+
+.kanban-card-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 720px) {
+  .kanban-column {
+    flex: 1 0 170px;
+    min-width: 170px;
+  }
 }
 
 .kanban-table {
