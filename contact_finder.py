@@ -152,28 +152,31 @@ def _rank_by_title(person: dict, titles: list[str]) -> int:
     return len(titles)
 
 
-def _find_contacts_via_apollo(domain: str, titles: list[str], limit: int) -> list[dict]:
-    """Apollo-first contact lookup: real named people, ranked by title
-    match, with a synchronously-revealed verified email. Phone reveal
-    (async, credits-limited -- see apollo_client.py) is requested for every
-    email-verified candidate up to `limit` at once, then polled for in
-    parallel -- one shared ~150s wait total, not 150s stacked per candidate,
-    since Apollo's webhook lands independently of when polling starts. This
-    raises the odds at least one candidate's phone lands within the window,
-    without multiplying the wait by how many candidates we try.
+def _find_contacts_via_apollo(domain: str, titles: list[str], limit: int) -> tuple[list[dict], list[dict]]:
+    """Apollo-first contact lookup. Returns (contacts, seen):
 
-    Same PRD bar as the Exa path (_is_reachable: both email AND phone
-    required) -- a person with only one of the two is dropped here too,
-    not returned as partial."""
+    contacts: fully-verified people with BOTH a confirmed email AND phone
+    (the strict bar -- a direct, ready-to-dial contact).
+
+    seen: the same top title-matched people as NAMES to ask for (name +
+    title), captured even when their direct email/phone couldn't be
+    confirmed. This is the "who do I ask for" half of the cold-call
+    workflow -- paired with the company's general office line, a named
+    person you can't directly reach is still a usable lead ("calling to
+    reach Jane Smith, your CFO"). Apollo almost always has a named person
+    for a real mid-size company even when it can't confirm both contact
+    fields, so this makes reachability far more reliable.
+
+    Phone reveal (async, credits-limited) is requested for every
+    email-verified candidate up front, then polled in parallel -- one
+    shared ~150s wait, not stacked per candidate."""
     people = apollo_client.search_people(domain, titles, per_page=limit * 2)
     if not people:
-        return []
+        return [], []
     people.sort(key=lambda p: _rank_by_title(p, titles))
 
-    # Stage 1: confirm email and kick off phone reveal for every candidate
-    # up to `limit`, so all the async reveal requests are already in flight
-    # before any polling starts.
-    pending = []
+    seen = []      # named people to ask for (name + title), contact optional
+    pending = []   # email-confirmed people with a phone reveal in flight
     for person in people:
         if len(pending) >= limit:
             break
@@ -182,24 +185,28 @@ def _find_contacts_via_apollo(domain: str, titles: list[str], limit: int) -> lis
             continue
 
         enriched = apollo_client.enrich_person(person_id)
+        name = enriched["name"]
+        title = person.get("title")
+        if name and not any(s["name"] == name for s in seen):
+            seen.append({"name": name, "title": title})
+
         email = enriched["email"]
         if not email:
             continue
-
         if not apollo_client.request_phone_reveal(person_id):
             continue
 
         pending.append({
             "person_id": person_id,
-            "name": enriched["name"],
-            "title": person.get("title"),
+            "name": name,
+            "title": title,
             "email": email,
         })
 
     if not pending:
-        return []
+        return [], seen[:limit]
 
-    # Stage 2: one shared poll across every pending candidate's reveal.
+    # One shared poll across every pending candidate's reveal.
     phones = apollo_client.poll_phone_reveals([p["person_id"] for p in pending])
 
     contacts = []
@@ -215,7 +222,7 @@ def _find_contacts_via_apollo(domain: str, titles: list[str], limit: int) -> lis
             "source_url": f"https://app.apollo.io/#/people/{p['person_id']}",
         })
 
-    return contacts
+    return contacts, seen[:limit]
 
 
 def find_contacts(
@@ -240,20 +247,33 @@ def find_contacts(
     """
     titles = target_titles or TARGET_TITLES
 
+    apollo_seen: list[dict] = []  # named people from Apollo, carried into the Exa fallback too
+    alternate_note = None  # set when we substitute an alternate for a requested title
     if domain and apollo_client.APOLLO_API_KEY:
         try:
-            apollo_contacts = _find_contacts_via_apollo(domain, titles, limit)
+            apollo_contacts, apollo_seen = _find_contacts_via_apollo(domain, titles, limit)
+            # If a SPECIFIC title was requested but nobody at this company
+            # matches it, don't drop the company -- offer an alternate
+            # decision-maker at the same company (default title set), and say
+            # so plainly. This is the "can't find that position, here's an
+            # alternate at the same company" behavior, and it also stops the
+            # pipeline from churning through companies hunting for a rare title.
+            if target_titles and not apollo_contacts and not apollo_seen:
+                alt_contacts, alt_seen = _find_contacts_via_apollo(domain, TARGET_TITLES, limit)
+                if alt_contacts or alt_seen:
+                    alternate_note = f"No {', '.join(target_titles)} found at this company — here's an alternate decision-maker."
+                    apollo_contacts, apollo_seen = alt_contacts, alt_seen
         except Exception as e:
             # Apollo being down/out-of-credits/misconfigured shouldn't
             # block contact-finding entirely -- fall through to the Exa
             # path below, same as when Apollo simply finds nothing.
             print(f"Warning: Apollo lookup failed for {account_name!r}, falling back to web search: {e}", file=sys.stderr)
-            apollo_contacts = []
+            apollo_contacts, apollo_seen = [], []
         if apollo_contacts:
-            return {"contacts": apollo_contacts, "general_office": None}
-        # Apollo found nothing reachable -- fall through to Exa+Claude,
-        # which also covers general_office (Apollo's People Search has no
-        # equivalent to a company's main line/inbox).
+            return {"contacts": apollo_contacts, "general_office": None, "people_seen": apollo_seen, "alternate_note": alternate_note}
+        # No fully-verified direct contact from Apollo -- fall through to
+        # Exa+Claude for a general office line, but keep apollo_seen (the
+        # named people to ask for) so the caller can pair them with it.
 
     anthropic_key = os.getenv("ANTHROPIC_API_KEY")
     exa_key = os.getenv("EXA_API_KEY")
@@ -344,7 +364,7 @@ def find_contacts(
                     if (phone or email) and source_url else None
                 )
 
-            return {"contacts": reachable[:limit], "general_office": general_office}
+            return {"contacts": reachable[:limit], "general_office": general_office, "people_seen": apollo_seen, "alternate_note": alternate_note}
 
         messages.append({"role": "user", "content": tool_results})
 

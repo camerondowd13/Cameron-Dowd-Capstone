@@ -1518,6 +1518,15 @@ nav.site-nav a.nav-cta:hover {
   color: var(--ink);
 }
 
+/* "Couldn't find that title -- here's an alternate decision-maker" note,
+   shown above the substituted contact in results cards and the modal. */
+.alt-note {
+  font-size: 0.82rem;
+  color: #fbbf24;
+  margin-bottom: 6px;
+  font-style: italic;
+}
+
 /* .fallback's own margin varies by context (inline inside a table cell vs.
    a standalone paragraph after other content) -- this modifier covers the
    latter, replacing inline style="margin-top:14px". */

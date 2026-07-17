@@ -115,7 +115,8 @@ def test_discover_via_apollo_passes_target_titles_to_contact_finder(monkeypatch)
 
     def fake_find_contacts(name, domain=None, target_titles=None, **kwargs):
         received_titles.append(target_titles)
-        return {"contacts": [], "general_office": {"phone": "555-0000", "email": "info@test.com"}}
+        return {"contacts": [], "general_office": {"phone": "555-0000", "email": "info@test.com"},
+                "people_seen": [{"name": "Jane Doe", "title": "CFO"}]}
 
     monkeypatch.setattr(account_finder.contact_finder, "find_contacts", fake_find_contacts)
 
@@ -196,7 +197,8 @@ def test_discover_via_apollo_stops_once_limit_reached(monkeypatch):
     )
     monkeypatch.setattr(
         account_finder.contact_finder, "find_contacts",
-        lambda name, domain=None, **k: {"contacts": [], "general_office": {"phone": "555-0000", "email": "info@test.com"}},
+        lambda name, domain=None, **k: {"contacts": [], "general_office": {"phone": "555-0000", "email": "info@test.com"},
+                                        "people_seen": [{"name": "Jane Doe", "title": "CFO"}]},
     )
 
     result = account_finder._discover_via_apollo(
@@ -214,3 +216,48 @@ def test_discover_via_apollo_returns_empty_without_industry():
         "Texas", None, 50, 1000, limit=3, known_names=set(), known_domains=set(),
     )
     assert result == []
+
+
+def test_discover_via_apollo_requires_a_named_person(monkeypatch):
+    # New rule: a lead needs a named person to ask for AND a real line to
+    # reach the company. A general office line with NO named person is not a
+    # usable lead -- you wouldn't know who to ask for -- so it's dropped.
+    orgs = [_mock_org("No Named Person Co", ["1542"])]
+    monkeypatch.setattr(account_finder.apollo_client, "search_organizations", lambda *a, **k: orgs)
+    monkeypatch.setattr(
+        account_finder.account_researcher, "research_account",
+        lambda name, domain=None: {"meets_icp": True, "employee_count": 100, "buying_triggers": "trigger", "sources": []},
+    )
+    monkeypatch.setattr(
+        account_finder.contact_finder, "find_contacts",
+        lambda name, domain=None, **k: {"contacts": [], "general_office": {"phone": "555-0000", "email": None}, "people_seen": []},
+    )
+    result = account_finder._discover_via_apollo(
+        "Texas", "construction", 50, 1000, limit=3, known_names=set(), known_domains=set(),
+    )
+    assert result == []  # dropped: reachable line but nobody to ask for
+
+
+def test_discover_via_apollo_named_person_plus_general_line_qualifies(monkeypatch):
+    # The intended cold-call lead: no verified direct contact, but a named
+    # person to ask for + the company's general line = a usable lead.
+    orgs = [_mock_org("Ask For Jane Co", ["1542"])]
+    # Page-aware: return the company only on page 1 (real Apollo pages differ),
+    # so the candidate isn't counted once per page.
+    monkeypatch.setattr(account_finder.apollo_client, "search_organizations",
+                        lambda *a, **k: orgs if k.get("page", 1) == 1 else [])
+    monkeypatch.setattr(
+        account_finder.account_researcher, "research_account",
+        lambda name, domain=None: {"meets_icp": True, "employee_count": 100, "buying_triggers": "trigger", "sources": []},
+    )
+    monkeypatch.setattr(
+        account_finder.contact_finder, "find_contacts",
+        lambda name, domain=None, **k: {"contacts": [], "general_office": {"phone": "555-0000", "email": "info@x.com"},
+                                        "people_seen": [{"name": "Jane Doe", "title": "CFO"}]},
+    )
+    result = account_finder._discover_via_apollo(
+        "Texas", "construction", 50, 1000, limit=3, known_names=set(), known_domains=set(),
+    )
+    assert len(result) == 1
+    assert result[0]["contacts_seen"] == [{"name": "Jane Doe", "title": "CFO"}]
+    assert result[0]["general_office"]["phone"] == "555-0000"

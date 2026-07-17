@@ -391,6 +391,7 @@
       detailModalBody.innerHTML = `
         <div class="meta modal-field">${row.territory || ''} · ${row.industry || 'any industry'} · ${row.size || ''}</div>
         <p class="modal-field"><strong>Buying trigger:</strong> ${row.trigger || 'none noted'}</p>
+        ${row.alternateNote ? `<div class="alt-note modal-field">${row.alternateNote}</div>` : ''}
         <div class="contact-name modal-field"><strong>${row.contact || ''}</strong>${row.title ? `, ${row.title}` : ''}</div>
         <div class="contact-details modal-field">
           <div class="detail">
@@ -465,6 +466,9 @@
         hiringStatus: c.hiring_status || null,
         techStack: c.tech_stack_hints || null,
         industryDetail: c.industry_detail || null,
+        // Set when the requested title wasn't found and an alternate
+        // decision-maker at the same company was used instead.
+        alternateNote: c.alternate_note || null,
       };
     }
 
@@ -495,6 +499,7 @@
         card.innerHTML = `
           <h4>${m.company} <span class="live-badge">live</span></h4>
           <div class="meta">${m.territory} · ${m.industry || 'any industry'} · ${m.size} · Trigger: ${m.trigger || 'none noted'}</div>
+          ${m.alternateNote ? `<div class="alt-note">${m.alternateNote}</div>` : ''}
           <div class="contact-name"><strong>${m.contact}</strong>${m.title ? `, ${m.title}` : ''}</div>
           <div class="contact-details">
             <div class="detail">

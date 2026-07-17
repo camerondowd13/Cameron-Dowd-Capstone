@@ -43,6 +43,15 @@ INDUSTRY_SIC_PREFIXES = {
 }
 
 
+def _apollo_org_phone(org: dict) -> str | None:
+    """The company's main phone from an Apollo Organization Search record.
+    Apollo reliably has this for basically every company, so it's the
+    guaranteed general-office fallback -- a real line to call and ask for a
+    named contact when that person's direct number can't be confirmed."""
+    pp = org.get("primary_phone") or {}
+    return pp.get("sanitized_number") or pp.get("number") or org.get("phone")
+
+
 def _matches_industry_sic(org: dict, industry: str) -> bool:
     # INDUSTRY_SIC_PREFIXES keys are lowercase; callers pass industry
     # capitalized (e.g. "Construction", matching the site's dropdown and
@@ -440,7 +449,10 @@ def _discover_via_apollo(
             if not _matches_industry_sic(org, industry):
                 sic_misses += 1
                 continue
-            page_candidates.append({"name": name, "domain": domain, "website": org.get("website_url")})
+            page_candidates.append({
+                "name": name, "domain": domain, "website": org.get("website_url"),
+                "apollo_phone": _apollo_org_phone(org),
+            })
 
         candidates.extend(page_candidates)
         if trace:
@@ -506,23 +518,43 @@ def _discover_via_apollo(
 
         general_office = contacts["general_office"]
         verified_contacts = contacts["contacts"]
-        if not verified_contacts and not general_office:
+        people_seen = contacts.get("people_seen") or []
+
+        # Guarantee a real way to reach the company. Apollo's Organization
+        # Search already handed us the company's main phone during discovery
+        # (c["apollo_phone"]). If there's no fully-verified direct contact and
+        # no web-found general line with a phone, fall back to that Apollo
+        # company phone -- so every ICP-fit company Apollo found is reachable.
+        apollo_phone = c.get("apollo_phone")
+        if not verified_contacts and (not general_office or not general_office.get("phone")) and apollo_phone:
+            general_office = {
+                "phone": apollo_phone,
+                "email": (general_office or {}).get("email"),
+                "source_url": (general_office or {}).get("source_url") or c["website"],
+            }
+
+        has_reach = bool(general_office and (general_office.get("phone") or general_office.get("email")))
+        # A lead needs a real named person to ask for AND a real way to reach
+        # the company. A verified direct contact satisfies both at once;
+        # otherwise a named person (people_seen) + the general office line.
+        if not verified_contacts and not (people_seen and has_reach):
             if trace:
-                console.print(f"[yellow]  ○ {c['name']} — no reachable contact found[/yellow]")
+                console.print(f"[yellow]  ○ {c['name']} — no named contact + reachable line[/yellow]")
             emit("contact", c["name"], "disqualified",
-                 "Tried Apollo, then a web-search fallback -- neither found a named person with confirmed "
-                 "email+phone, nor even a general company phone/email. Dropped: a real ICP-fit company with "
-                 "no way to actually reach them isn't useful as a lead.")
+                 "No usable lead: couldn't pair a named person to ask for with a real line to reach the "
+                 "company (no verified direct contact, and either no named person or no company phone/email).")
             continue
+
         if verified_contacts:
             names = ", ".join(f"{p['name']} ({p['title']})" for p in verified_contacts)
-            detail = (f"Found {len(verified_contacts)} named person(s) with a confirmed direct email AND phone "
-                      f"(the strict bar -- one without the other doesn't count): {names}.")
+            detail = f"Found {len(verified_contacts)} named person(s) with a confirmed direct email AND phone: {names}."
         else:
-            detail = ("No named person had both email+phone confirmed, but found the company's general "
-                      "office phone/email as a fallback -- still a real way to reach them, just not a direct dial.")
+            ask = people_seen[0]
+            detail = (f"Ask for {ask['name']} ({ask.get('title') or 'decision-maker'}) via the company line "
+                      f"{general_office.get('phone') or general_office.get('email')} -- direct contact not confirmed, "
+                      "but a real named person + a real way to reach them.")
         if trace:
-            console.print(f"[green]  ✓ {c['name']} — {len(verified_contacts)} verified contact(s), general_office={bool(general_office)}[/green]")
+            console.print(f"[green]  ✓ {c['name']} — {len(verified_contacts)} verified, {len(people_seen)} to ask for, general_office={bool(general_office)}[/green]")
         emit("contact", c["name"], "success", detail)
 
         qualified.append({
@@ -532,9 +564,12 @@ def _discover_via_apollo(
             "buying_trigger": research.get("buying_triggers"),
             "source_url": (research.get("sources") or [None])[0],
             "website": c["website"],
-            "contacts_seen": [],
+            "contacts_seen": people_seen,
             "verified_contacts": verified_contacts,
             "general_office": general_office,
+            # Set when the requested job title wasn't found and an alternate
+            # decision-maker at the same company was substituted instead.
+            "alternate_note": contacts.get("alternate_note"),
             # Company background for the salesperson -- already generated by
             # research_account above, previously discarded. Surfaced in the
             # frontend's lead detail modal (a click into any board/dashboard
