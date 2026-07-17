@@ -19,11 +19,40 @@ import requests
 from anthropic import Anthropic
 from dotenv import load_dotenv
 from exa_py import Exa
+from rich.console import Console
 
+import account_researcher
+import apollo_client
 import contact_finder
 from enrich_pipeline import load_supabase_config
 from icp import MAX_SIZE, MIN_SIZE, VALID_INDUSTRIES
 from search_utils import run_exa_search, strip_linkedin
+
+console = Console()
+
+# SIC major-group prefixes per industry, used to post-filter Apollo
+# Organization Search results -- q_organization_keyword_tags is a loose
+# match (confirmed pulling in a trade association and staffing agencies
+# alongside real construction companies), so keyword hits alone aren't
+# trustworthy. SIC codes are Apollo's own structured classification, not a
+# fuzzy tag, so filtering on them is a precise industry check.
+INDUSTRY_SIC_PREFIXES = {
+    "construction": ("15", "16", "17"),
+    "manufacturing": tuple(str(n) for n in range(20, 40)),
+    "healthcare": ("80",),
+}
+
+
+def _matches_industry_sic(org: dict, industry: str) -> bool:
+    # INDUSTRY_SIC_PREFIXES keys are lowercase; callers pass industry
+    # capitalized (e.g. "Construction", matching the site's dropdown and
+    # find_accounts()'s own VALID_INDUSTRIES check). A bare .get() without
+    # lowercasing silently returned () for every call -- meaning every
+    # candidate failed this check regardless of its actual SIC codes.
+    prefixes = INDUSTRY_SIC_PREFIXES.get((industry or "").lower(), ())
+    return any(
+        (code or "").startswith(prefixes) for code in (org.get("sic_codes") or [])
+    )
 
 
 def _domain(url: str) -> str:
@@ -321,6 +350,200 @@ def _verify_candidate_details(client, exa, candidates, seen_urls, search_text_co
     return candidates
 
 
+def _discover_via_apollo(
+    state: str,
+    industry: str,
+    min_size: int,
+    max_size: int,
+    limit: int,
+    known_names: set,
+    known_domains: set,
+    trace: bool = False,
+    events: list | None = None,
+) -> list[dict]:
+    """Discovery via Apollo's Organization Search instead of freeform
+    Claude+Exa web search. The web-search discovery loop is bottlenecked by
+    a small search-turn budget trying to *find* companies that exist --
+    Apollo already has a structured database of them, filterable by
+    location/size/industry (SIC-verified, not just the keyword tag) in one
+    call, no LLM required for that part.
+
+    What Apollo's org search can't give us -- a real, current buying
+    trigger -- still requires per-candidate research, so each SIC-matched
+    org gets run through account_researcher.research_account() (Claude+Exa,
+    but scoped to ONE already-known-real company, a much narrower task than
+    discovering companies from scratch). Stops once `limit` candidates
+    clear both research_account's meets_icp gate and contact_finder's
+    reachability bar, same qualification standard as the web-search path.
+
+    trace=True prints a colored, step-by-step console log of every stage --
+    critically, API/infrastructure errors print in [bold red] with an "API
+    ERROR" label distinct from a genuine [yellow] disqualification, so the
+    two can never be silently confused again (they were, in production,
+    before this was added -- an Anthropic usage-limit rejection looked
+    identical to "this candidate doesn't qualify" from the outside).
+
+    events: if a list is passed, each step also appends a structured
+    {"stage", "company", "status", "detail"} dict to it -- same information
+    as the console trace, but machine-readable, for rendering a visual
+    report (see render_trace_html.py) instead of just reading terminal text.
+
+    Returns candidates in the same shape find_accounts() already produces,
+    or [] if industry is None (Apollo's keyword-tag search needs something
+    to search for) or the Apollo API isn't configured."""
+    def emit(stage, company, status, detail):
+        if events is not None:
+            events.append({"stage": stage, "company": company, "status": status, "detail": detail})
+
+    if not industry or not apollo_client.APOLLO_API_KEY:
+        if trace:
+            console.print("[dim]Skipping Apollo discovery -- no industry given or APOLLO_API_KEY not set.[/dim]")
+        return []
+
+    if trace:
+        console.rule("[bold cyan]DISCOVERY — Apollo Organization Search[/bold cyan]")
+        console.print(f"[cyan]Searching Apollo: {state}, {industry}, {min_size}-{max_size} employees...[/cyan]")
+
+    # Organization Search doesn't consume Apollo credits (per their pricing
+    # docs), so there's no cost to pulling extra pages -- confirmed in
+    # testing that results for identical parameters aren't stable between
+    # calls (one pull returned 0 real SIC-matches out of 100, an
+    # immediately-following identical call returned several in its first
+    # 5), so a single page isn't reliable enough to trust on its own.
+    MAX_PAGES = 3
+    candidates = []
+    for page in range(1, MAX_PAGES + 1):
+        if len(candidates) >= limit * 3:
+            break
+        try:
+            orgs = apollo_client.search_organizations(state, industry, min_size, max_size, per_page=100, page=page)
+        except Exception as e:
+            if trace:
+                console.print(f"[bold red]API ERROR — Apollo org search (page {page}) failed: {e}[/bold red]")
+            else:
+                print(f"Warning: Apollo org search failed for {state!r}/{industry!r}: {e}", file=sys.stderr)
+            emit("discovery", None, "error", f"Apollo org search (page {page}) failed: {e}")
+            break
+
+        sic_misses = 0
+        dedup_misses = 0
+        page_candidates = []
+        for org in orgs:
+            name = org.get("name")
+            domain = _domain(org.get("website_url") or "")
+            if not name or not domain:
+                continue
+            if name.strip().lower() in known_names or domain in known_domains:
+                dedup_misses += 1
+                continue
+            if not _matches_industry_sic(org, industry):
+                sic_misses += 1
+                continue
+            page_candidates.append({"name": name, "domain": domain, "website": org.get("website_url")})
+
+        candidates.extend(page_candidates)
+        if trace:
+            console.print(
+                f"[cyan]  page {page}: {len(orgs)} raw -> {len(page_candidates)} passed "
+                f"(sic mismatch: {sic_misses}, already known: {dedup_misses})[/cyan]"
+            )
+        emit(
+            "discovery", None, "info",
+            f"Page {page}: Apollo returned {len(orgs)} companies matching location+size, but Apollo's "
+            f"keyword search is loose -- it also returns tangentially-related companies (staffing agencies, "
+            f"trade associations). Checking each one's actual government SIC industry code narrowed this "
+            f"down to {len(page_candidates)} genuine matches ({sic_misses} wrong industry despite the keyword "
+            f"hit, {dedup_misses} already in your Supabase accounts table).",
+        )
+        if not orgs:
+            break  # ran out of pages
+
+    if trace:
+        console.print(f"[cyan]  -> {len(candidates)} total candidates across {page} page(s)[/cyan]")
+        console.rule("[bold blue]RESEARCH — per-candidate ICP + trigger check[/bold blue]")
+
+    qualified = []
+    for c in candidates:
+        if len(qualified) >= limit:
+            if trace:
+                console.print(f"[dim]Reached limit ({limit}) -- stopping.[/dim]")
+            break
+        try:
+            research = account_researcher.research_account(c["name"], domain=c["domain"])
+        except Exception as e:
+            if trace:
+                console.print(f"[bold red]⚠ API ERROR — {c['name']}: research_account failed: {e}[/bold red]")
+            else:
+                print(f"Warning: research_account failed for {c['name']!r}: {e}", file=sys.stderr)
+            emit("research", c["name"], "error",
+                 f"Claude+Exa research call itself failed (infrastructure problem, not a disqualification): {e}")
+            continue
+        if not research.get("meets_icp"):
+            if trace:
+                console.print(f"[yellow]✗ {c['name']} — does not meet ICP ({research.get('industry')})[/yellow]")
+            emit("research", c["name"], "disqualified",
+                 f"Real company, but doesn't fit the ICP -- Claude found its actual industry/size to be "
+                 f"\"{research.get('industry')}\" ({research.get('size_range')}), which fails the size/industry bar.")
+            continue
+        trigger = research.get("buying_triggers") or "no specific trigger found, but size+industry alone qualify it"
+        if trace:
+            console.print(f"[green]✓ {c['name']} — meets_icp, {research.get('employee_count')} employees[/green]")
+        emit("research", c["name"], "success",
+             f"Confirmed real and ICP-fit ({research.get('employee_count')} employees). "
+             f"Why it's a good lead right now: {trigger}")
+
+        try:
+            contacts = contact_finder.find_contacts(c["name"], domain=c["domain"])
+        except Exception as e:
+            if trace:
+                console.print(f"[bold red]⚠ API ERROR — {c['name']}: find_contacts failed: {e}[/bold red]")
+            else:
+                print(f"Warning: find_contacts failed for {c['name']!r}: {e}", file=sys.stderr)
+            emit("contact", c["name"], "error",
+                 f"Contact lookup call itself failed (infrastructure problem, not a disqualification): {e}")
+            continue
+
+        general_office = contacts["general_office"]
+        verified_contacts = contacts["contacts"]
+        if not verified_contacts and not general_office:
+            if trace:
+                console.print(f"[yellow]  ○ {c['name']} — no reachable contact found[/yellow]")
+            emit("contact", c["name"], "disqualified",
+                 "Tried Apollo, then a web-search fallback -- neither found a named person with confirmed "
+                 "email+phone, nor even a general company phone/email. Dropped: a real ICP-fit company with "
+                 "no way to actually reach them isn't useful as a lead.")
+            continue
+        if verified_contacts:
+            names = ", ".join(f"{p['name']} ({p['title']})" for p in verified_contacts)
+            detail = (f"Found {len(verified_contacts)} named person(s) with a confirmed direct email AND phone "
+                      f"(the strict bar -- one without the other doesn't count): {names}.")
+        else:
+            detail = ("No named person had both email+phone confirmed, but found the company's general "
+                      "office phone/email as a fallback -- still a real way to reach them, just not a direct dial.")
+        if trace:
+            console.print(f"[green]  ✓ {c['name']} — {len(verified_contacts)} verified contact(s), general_office={bool(general_office)}[/green]")
+        emit("contact", c["name"], "success", detail)
+
+        qualified.append({
+            "name": c["name"],
+            "location": state,
+            "employee_count": research.get("employee_count"),
+            "buying_trigger": research.get("buying_triggers"),
+            "source_url": (research.get("sources") or [None])[0],
+            "website": c["website"],
+            "contacts_seen": [],
+            "verified_contacts": verified_contacts,
+            "general_office": general_office,
+        })
+
+    if trace:
+        console.rule("[bold]RESULT[/bold]")
+        style = "bold green" if len(qualified) >= limit else "bold yellow"
+        console.print(f"[{style}]{len(qualified)}/{limit} qualified leads found via Apollo discovery[/{style}]")
+
+    return qualified
+
+
 def _within_size_range(company: dict, min_size: int, max_size: int) -> bool:
     """Enforce the ICP size range in code, with the PRD's sub-min exception:
     a company below min_size still qualifies if it has a real buying_trigger.
@@ -344,6 +567,8 @@ def find_accounts(
     industry: str | None = None,
     limit: int = DEFAULT_LIMIT,
     target_titles: list[str] | None = None,
+    trace: bool = False,
+    events: list | None = None,
 ) -> list[dict]:
     """Find candidate companies matching ICP filters, trigger-first.
 
@@ -356,6 +581,17 @@ def find_accounts(
     Search budget scales with `limit` (see _search_budget) -- requesting
     20 candidates runs meaningfully longer than requesting 5, since it
     needs more distinct searches to find that many real, verified matches.
+
+    trace=True prints a colored, step-by-step log of every stage (Apollo
+    discovery, per-candidate research, contact lookup, and — if Apollo
+    discovery falls short of `limit` — the Claude+Exa fallback loop) to the
+    console. Off by default since it's meant for local debugging, not the
+    production server path.
+
+    events: if a list is passed, structured {"stage", "company", "status",
+    "detail"} dicts get appended to it as each step runs -- pass this (with
+    trace=True or on its own) to also render a visual HTML report after the
+    call via render_trace_html.py, instead of only reading console text.
     """
     if industry is not None and industry.lower() not in VALID_INDUSTRIES:
         raise ValueError(
@@ -374,13 +610,37 @@ def find_accounts(
 
     known_names, known_domains = _fetch_known_companies()
 
-    search_budget = _search_budget(limit)
+    # Apollo Organization Search first: a structured database query for
+    # "real companies matching location/size/industry" beats asking an LLM
+    # to discover them one web search at a time. What Apollo's org search
+    # can't give us -- a current buying trigger -- still goes through
+    # account_researcher per candidate. If this alone covers `limit`, skip
+    # the Claude+Exa discovery loop below entirely.
+    apollo_qualified = _discover_via_apollo(
+        state, industry, min_size, max_size, limit, known_names, known_domains, trace=trace, events=events
+    )
+    if len(apollo_qualified) >= limit:
+        if events is not None:
+            events.append({"stage": "result", "company": None, "status": "success",
+                            "detail": f"{limit}/{limit} qualified via Apollo discovery alone"})
+        return apollo_qualified[:limit]
+
+    if trace and apollo_qualified:
+        console.print(f"[dim]Apollo discovery found {len(apollo_qualified)}/{limit} -- falling back to Claude+Exa web search for the rest.[/dim]")
+    elif trace:
+        console.print("[dim]Apollo discovery found 0 -- falling back to Claude+Exa web search.[/dim]")
+
+    remaining_limit = limit - len(apollo_qualified)
+    known_names = known_names | {(c["name"] or "").strip().lower() for c in apollo_qualified}
+    known_domains = known_domains | {_domain(c.get("website") or "") for c in apollo_qualified}
+
+    search_budget = _search_budget(remaining_limit)
     max_turns = search_budget + 2  # spare turns for the "limit reached" nudge + final submit
     system_prompt = _build_system_prompt(search_budget)
 
     territory = f"{city}, {state}" if city else state
     request = (
-        f"Find up to {limit} candidate companies.\n"
+        f"Find up to {remaining_limit} candidate companies.\n"
         f"Territory: {territory}\n"
         f"Company size: {min_size}-{max_size} employees "
         f"(a company under {min_size} still qualifies if it has a real buying trigger)"
@@ -507,7 +767,7 @@ def find_accounts(
 
             # Stage 2: go deep on each surviving candidate (capped, to bound
             # cost) to fill in whatever stage 1's broad sweep missed.
-            to_verify_cap = not_already_known[: limit * MAX_VERIFY_CANDIDATES_MULTIPLIER]
+            to_verify_cap = not_already_known[: remaining_limit * MAX_VERIFY_CANDIDATES_MULTIPLIER]
             _verify_candidate_details(client, exa, to_verify_cap, seen_urls, search_text_corpus)
             _ground(to_verify_cap)  # re-check stage 2's additions against the now-larger corpus
 
@@ -545,10 +805,15 @@ def find_accounts(
                 c["general_office"] = result["general_office"]
                 if c["contacts_seen"] and (result["contacts"] or result["general_office"]):
                     fully_qualified.append(c)
-                if len(fully_qualified) >= limit:
+                if len(fully_qualified) >= remaining_limit:
                     break
 
-            return fully_qualified[:limit]
+            final = (apollo_qualified + fully_qualified)[:limit]
+            if events is not None:
+                events.append({"stage": "result", "company": None,
+                                "status": "success" if len(final) >= limit else "disqualified",
+                                "detail": f"{len(final)}/{limit} qualified ({len(apollo_qualified)} via Apollo, {len(fully_qualified)} via Claude+Exa fallback)"})
+            return final
 
         messages.append({"role": "user", "content": tool_results})
 

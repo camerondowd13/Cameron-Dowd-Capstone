@@ -6,7 +6,9 @@
   --bg-alt: #241c38;
   --bg-tint: #241c38;
   --border: rgba(199, 178, 240, 0.14);
-  --accent: #8b5cf6;
+  --accent: #7c4ef0; /* darkened from #8b5cf6 -- that shade only hit 4.23:1 with white
+    button text, below WCAG AA's 4.5:1 for normal-weight text. This still passes the
+    logo's large-text contrast requirement (3:1) comfortably. */
   --accent-dark: #a78bfa;
   --accent-soft: rgba(139, 92, 246, 0.18);
   --accent-ink: #ffffff;
@@ -1309,6 +1311,75 @@ nav.site-nav a.nav-cta:hover {
   color: var(--ink-soft);
   font-size: 0.9rem;
   font-style: italic;
+}
+
+/* Fades/slides each section in as the visitor scrolls to it, so the
+   results -> board -> dashboard sequence on contact.html reads as one
+   continuous flow instead of three separate sections glued together. */
+.reveal-on-scroll {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+
+.reveal-on-scroll.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-on-scroll {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* Truncated trigger text in board preview rows -- .trigger-label's
+   uppercase/bold/letter-spacing treatment is meant for short category
+   words (GROWTH, NEW TO ROLE), not full sentences from live agent data;
+   using it on long text is what made the Trigger column look cluttered.
+   Full untruncated text is still available via the row's detail modal. */
+.trigger-preview {
+  display: inline-block;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  vertical-align: middle;
+}
+
+/* Section heading used above the Example Board/Dashboard previews --
+   standardizes what were previously two different one-off inline margins
+   (20px and 28px) to one consistent value. */
+.section-heading {
+  margin-bottom: 24px;
+}
+
+/* Repeated vertical rhythm inside the detail modal's stacked fields (meta
+   line, trigger, contact name, contact details) -- was four separate
+   inline style="margin-bottom:14px" attributes. */
+.modal-field {
+  margin-bottom: 14px;
+}
+
+/* .fallback's own margin varies by context (inline inside a table cell vs.
+   a standalone paragraph after other content) -- this modifier covers the
+   latter, replacing inline style="margin-top:14px". */
+.fallback-spaced {
+  margin-top: 14px;
+}
+
+/* Table cells showing a snake_case status value (e.g. "in_conversation")
+   as a readable capitalized label. */
+.status-cell {
+  text-transform: capitalize;
+}
+
+.example-banner .eyebrow {
+  margin: 0;
 }
 
 /* Reveal / unlock animation */

@@ -73,6 +73,41 @@ def search_people(domain: str, titles: list[str], per_page: int = 5) -> list[dic
     return resp.json().get("people", [])
 
 
+def search_organizations(
+    state: str, keyword: str, min_size: int, max_size: int, per_page: int = 25, page: int = 1
+) -> list[dict]:
+    """Organization Search: real companies matching location + employee
+    range + a keyword tag. Doesn't consume Apollo credits (Organization
+    Search is free per Apollo's pricing docs). Returns raw Apollo org
+    dicts (name, website_url, sic_codes, naics_codes, primary_phone, etc.).
+
+    q_organization_keyword_tags is a loose/fuzzy match -- confirmed in
+    testing it pulls in tangentially-related companies (a trade
+    association, staffing agencies) alongside real matches. Callers MUST
+    post-filter by sic_codes (see INDUSTRY_SIC_PREFIXES in account_finder.py)
+    for a precise industry match; don't trust the keyword tag alone.
+
+    Confirmed in testing: results for identical parameters are NOT stable
+    between calls -- one page-1 pull returned 0 real SIC matches out of
+    100, an immediately-following call to the same query returned several
+    in its first 5. Callers needing a reliable yield should paginate (see
+    `page`) rather than trust a single page."""
+    resp = requests.post(
+        f"{APOLLO_BASE}/mixed_companies/search",
+        headers=_headers(),
+        json={
+            "organization_locations": [f"{state}, US"],
+            "organization_num_employees_ranges": [f"{min_size},{max_size}"],
+            "q_organization_keyword_tags": [keyword],
+            "per_page": per_page,
+            "page": page,
+        },
+        timeout=20,
+    )
+    resp.raise_for_status()
+    return resp.json().get("organizations", [])
+
+
 def enrich_person(person_id: str) -> dict:
     """Synchronous email reveal for a specific person id (from
     search_people). Returns {"email", "name"} -- email is None if Apollo

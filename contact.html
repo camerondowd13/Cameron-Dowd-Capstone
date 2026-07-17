@@ -136,14 +136,14 @@
     </div>
   </section>
 
-  <section class="section section-decor">
+  <section class="section section-decor reveal-on-scroll">
     <div class="wrap">
       <div class="example-banner">
-        <span class="eyebrow" style="margin:0;">Example</span>
+        <span class="eyebrow">Example</span>
         <p>This is what your board looks like inside Sonar. Sample accounts are illustrative — your 3 live leads above are mixed in and flagged <span class="live-badge">live</span>.</p>
       </div>
 
-      <h2 style="margin-bottom:20px;">Example Board</h2>
+      <h2 class="section-heading">Example Board</h2>
 
       <div class="table-wrap">
         <table class="kanban-table">
@@ -155,25 +155,24 @@
               <th>Status</th>
               <th>Trigger</th>
               <th>Verified</th>
-              <th>Created</th>
             </tr>
           </thead>
           <tbody id="boardPreviewBody">
-            <tr><td colspan="7"><p class="empty-state">Run a search above to populate this board.</p></td></tr>
+            <tr><td colspan="6"><p class="empty-state">Run a search above to populate this board.</p></td></tr>
           </tbody>
         </table>
       </div>
     </div>
   </section>
 
-  <section class="section section-decor">
+  <section class="section section-decor reveal-on-scroll">
     <div class="wrap">
       <div class="example-banner">
-        <span class="eyebrow" style="margin:0;">Example</span>
+        <span class="eyebrow">Example</span>
         <p>This is what your dashboard looks like inside Sonar — a snapshot of your pipeline the moment you log in.</p>
       </div>
 
-      <h2 style="margin-bottom:28px;">Example Dashboard</h2>
+      <h2 class="section-heading">Example Dashboard</h2>
 
       <div class="dash-stats">
         <div class="dash-stat">
@@ -282,6 +281,34 @@
       return d.toISOString();
     }
 
+    function extractDomain(website) {
+      if (!website) return null;
+      try {
+        const url = website.trim().startsWith('http') ? website.trim() : `https://${website.trim()}`;
+        return new URL(url).hostname.replace(/^www\./, '');
+      } catch {
+        return null;
+      }
+    }
+
+    function truncate(text, maxLen) {
+      if (!text) return '';
+      return text.length > maxLen ? `${text.slice(0, maxLen).trimEnd()}…` : text;
+    }
+
+    // Fade/slide the Board and Dashboard sections in as the visitor scrolls
+    // to them, so the page reads as one continuous flow. CSS handles the
+    // prefers-reduced-motion opt-out; this just toggles the class.
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('revealed');
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15 });
+    document.querySelectorAll('.reveal-on-scroll').forEach((el) => revealObserver.observe(el));
+
     function animateCount(el, target, duration) {
       const start = performance.now();
       function tick(now) {
@@ -342,10 +369,10 @@
 
       detailModalTitle.innerHTML = `${row.company}${liveTag}`;
       detailModalBody.innerHTML = `
-        <div class="meta" style="margin-bottom:14px;">${row.territory || ''} · ${row.industry || 'any industry'} · ${row.size || ''}</div>
-        <p style="margin-bottom:14px;"><strong>Buying trigger:</strong> ${row.trigger || 'none noted'}</p>
-        <div class="contact-name" style="margin-bottom:14px;"><strong>${row.contact || ''}</strong>${row.title ? `, ${row.title}` : ''}</div>
-        <div class="contact-details" style="margin-bottom:14px;">
+        <div class="meta modal-field">${row.territory || ''} · ${row.industry || 'any industry'} · ${row.size || ''}</div>
+        <p class="modal-field"><strong>Buying trigger:</strong> ${row.trigger || 'none noted'}</p>
+        <div class="contact-name modal-field"><strong>${row.contact || ''}</strong>${row.title ? `, ${row.title}` : ''}</div>
+        <div class="contact-details modal-field">
           <div class="detail">
             <span class="detail-label">Phone ${row.phoneVerified ? '<span class="verify-badge">✓ verified</span>' : '<span class="verify-badge verify-badge-pending">pending</span>'}</span>
             <span>${isUnlocked ? (row.phone || 'Not available') : maskPhone(row.phone)}</span>
@@ -459,9 +486,9 @@
             </div>
           </div>
           ${!hasContact
-            ? '<p class="fallback" style="margin-top:14px;">No reachable contact found for this one — that happens with live data. Try another search.</p>'
+            ? '<p class="fallback fallback-spaced">No reachable contact found for this one — that happens with live data. Try another search.</p>'
             : (isUnlocked
-                ? '<span class="fallback" style="margin-top:14px;">Unlocked</span>'
+                ? '<span class="fallback fallback-spaced">Unlocked</span>'
                 : `<button class="unlock-btn" data-id="${m.id}">Unlock contact (1 token)</button>`)}
         `;
 
@@ -494,7 +521,10 @@
       tr.className = row.isLive ? 'live-row' : '';
 
       const initial = (row.company || '?').charAt(0).toUpperCase();
-      const avatarHtml = `<div class="company-avatar" style="background:${avatarColor(row.company)}">${initial}</div>`;
+      const domain = extractDomain(row.website);
+      const avatarHtml = domain
+        ? `<img class="company-avatar company-logo" src="https://logos-api.apistemic.com/domain:${domain}" alt="" onerror="this.outerHTML='<div class=&quot;company-avatar&quot; style=&quot;background:${avatarColor(row.company)}&quot;>${initial}</div>'">`
+        : `<div class="company-avatar" style="background:${avatarColor(row.company)}">${initial}</div>`;
       const isApproved = row.phoneVerified && row.emailVerified;
       const verifyBadge = isApproved
         ? '<span class="verify-badge">✓ verified</span>'
@@ -542,22 +572,23 @@
         </td>
         <td>${actionsCell}</td>
         <td>${row.contact || ''}</td>
-        <td style="text-transform:capitalize;">${statusLabel}</td>
-        <td><span class="trigger-label">${row.trigger || ''}</span></td>
+        <td class="status-cell">${statusLabel}</td>
+        <td><span class="trigger-preview" title="${(row.trigger || '').replace(/"/g, '&quot;')}">${truncate(row.trigger, 60) || '—'}</span></td>
         <td>${verifyBadge}</td>
-        <td>${row.createdDaysAgo === 0 ? 'Just now' : formatDate(daysAgoToIso(row.createdDaysAgo))}</td>
       `;
 
       const revealedContact = tr.querySelector('.revealed-contact[hidden]');
       if (revealedContact) {
         tr.querySelectorAll('.reveal-toggle').forEach(btn => {
-          btn.addEventListener('click', () => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
             revealedContact.hidden = !revealedContact.hidden;
           });
         });
       }
 
-      tr.querySelector('.company-link').addEventListener('click', () => openDetailModal(row));
+      tr.querySelectorAll('a.revealed-pill').forEach(a => a.addEventListener('click', (e) => e.stopPropagation()));
+      tr.addEventListener('click', () => openDetailModal(row));
 
       return tr;
     }
@@ -566,7 +597,7 @@
       const rows = [...liveLeads, ...fillerRows];
       boardBodyEl.innerHTML = '';
       if (rows.length === 0) {
-        boardBodyEl.innerHTML = '<tr><td colspan="7"><p class="empty-state">Run a search above to populate this board.</p></td></tr>';
+        boardBodyEl.innerHTML = '<tr><td colspan="6"><p class="empty-state">Run a search above to populate this board.</p></td></tr>';
         return;
       }
       rows.forEach(row => boardBodyEl.appendChild(renderBoardRow(row)));
@@ -608,11 +639,11 @@
         tr.innerHTML = `
           <td><span class="company-link">${row.company}${liveTag}</span></td>
           <td>${row.contact || ''}</td>
-          <td style="text-transform:capitalize;">${statusLabel}</td>
+          <td class="status-cell">${statusLabel}</td>
           <td>${verifyBadge}</td>
           <td>${row.createdDaysAgo === 0 ? 'Just now' : formatDate(daysAgoToIso(row.createdDaysAgo))}</td>
         `;
-        tr.querySelector('.company-link').addEventListener('click', () => openDetailModal(row));
+        tr.addEventListener('click', () => openDetailModal(row));
         dashboardBodyEl.appendChild(tr);
       });
     }
