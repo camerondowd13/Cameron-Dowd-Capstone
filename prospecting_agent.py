@@ -426,52 +426,72 @@ def _send_summary_email(composio: Composio, results: list[dict], failed_states: 
     import datetime
 
     failed_states = failed_states or []
-    today = datetime.date.today().isoformat()
+    today_iso = datetime.date.today().isoformat()
+    today_human = datetime.date.today().strftime("%B %d, %Y")
     saved = [r for r in results if r["status"] in ("new", "partial")]
     lost = [r for r in results if r["status"] == "lost"]
     drafts = sum(1 for r in results if r["gmail_draft"])
 
-    lines = [f"Daily Prospecting Report -- {today}", ""]
-    lines.append(f"{len(saved)} compan{'y' if len(saved) == 1 else 'ies'} saved to the board, {drafts} outreach draft(s) created.")
+    # Flush-left block layout, no leading-space indentation: Gmail renders
+    # plain-text email in a proportional font and collapses leading
+    # whitespace, so indentation-based hierarchy flattens in the inbox.
+    # Hierarchy here comes from section headers, blank lines between blocks,
+    # and full-width divider rules (runs of dashes survive, unlike spaces).
+    divider = "-" * 52
+
+    lines = ["Daily Prospecting Report", today_human, ""]
+    lines.append("SUMMARY")
+    lines.append(f"{len(saved)} compan{'y' if len(saved) == 1 else 'ies'} saved to the board. {drafts} outreach draft(s) created.")
     if failed_states:
         lines.append(f"{len(failed_states)} territor{'y' if len(failed_states) == 1 else 'ies'} could not run at all today: {', '.join(s for s, _ in failed_states)}.")
     if lost:
-        lines.append(f"{len(lost)} compan{'y' if len(lost) == 1 else 'ies'} could not be saved at all (see errors below).")
-    lines.append("")
+        lines.append(f"{len(lost)} compan{'y' if len(lost) == 1 else 'ies'} could not be saved (see failures below).")
 
     if saved:
-        lines.append("SAVED:")
+        lines.append("")
+        lines.append(divider)
+        lines.append("NEW LEADS")
         for r in saved:
-            flag = " [PARTIAL -- needs a look]" if r["status"] == "partial" else ""
-            lines.append(f"  - {r['name']} ({r['territory']}) -- {r['contact_tier']}{flag}")
-            contact_line = " / ".join(
+            lines.append("")
+            flag = "  [PARTIAL -- needs a look]" if r["status"] == "partial" else ""
+            lines.append(f"{r['name']} -- {r['territory']}{flag}")
+            if r.get("contact_tier"):
+                lines.append(f"Contact type: {r['contact_tier'].capitalize()}")
+            contact_line = ", ".join(
                 p for p in (r.get("contact_name"), r.get("contact_title")) if p
             )
             if contact_line:
-                lines.append(f"      Contact: {contact_line}")
+                lines.append(f"Contact: {contact_line}")
             if r.get("contact_email"):
-                lines.append(f"      Email: {r['contact_email']}")
+                lines.append(f"Email: {r['contact_email']}")
             if r.get("contact_phone"):
-                lines.append(f"      Phone: {r['contact_phone']}")
+                lines.append(f"Phone: {r['contact_phone']}")
             if r.get("buying_trigger"):
-                lines.append(f"      Trigger: {r['buying_trigger']}")
+                lines.append(f"Trigger: {r['buying_trigger']}")
     else:
+        lines.append("")
         lines.append("No new qualifying companies found today.")
 
     if lost:
         lines.append("")
-        lines.append("FAILED (nothing saved):")
+        lines.append(divider)
+        lines.append("COULD NOT BE SAVED")
         for r in lost:
-            lines.append(f"  - {r['name']} ({r['territory']}): {r['error']}")
+            lines.append("")
+            lines.append(f"{r['name']} -- {r['territory']}")
+            lines.append(r["error"])
 
     if failed_states:
         lines.append("")
-        lines.append("TERRITORIES THAT DIDN'T RUN (nothing attempted, needs investigating):")
+        lines.append(divider)
+        lines.append("TERRITORIES THAT DIDN'T RUN")
         for state, error in failed_states:
-            lines.append(f"  - {state}: {error}")
+            lines.append("")
+            lines.append(state)
+            lines.append(error)
 
     body = "\n".join(lines)
-    subject = f"Daily Prospecting Report -- {today} -- {len(saved)} new lead(s)"
+    subject = f"Daily Prospecting Report -- {today_iso} -- {len(saved)} new lead(s)"
     composio.tools.execute(
         slug="GMAIL_SEND_EMAIL",
         user_id=COMPOSIO_USER_ID,
