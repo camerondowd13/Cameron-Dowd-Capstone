@@ -365,6 +365,23 @@
     }
 
     // ---- detail modal (expand-in-place, no navigation, no database) ----
+    function backgroundSection(row) {
+      // Company dossier the agent already researched -- only render the lines
+      // that actually came back (Apollo-path leads have these; others may not).
+      const items = [
+        ['What they do', row.industryDetail],
+        ['Recent news', row.recentNews],
+        ['Hiring', row.hiringStatus],
+        ['Tech stack', row.techStack],
+      ].filter(([, v]) => v);
+      if (items.length === 0) return '';
+      const rows = items.map(([label, v]) => `<p class="bg-line"><strong>${label}:</strong> ${v}</p>`).join('');
+      return `<div class="modal-field company-background">
+          <div class="detail-label bg-heading">Company background</div>
+          ${rows}
+        </div>`;
+    }
+
     function openDetailModal(row) {
       const isUnlocked = !row.isLive || unlockedIds.has(row.id);
       const hasContact = !!(row.phone || row.email);
@@ -385,6 +402,7 @@
             <span>${isUnlocked ? (row.email || 'Not available') : maskEmail(row.email)}</span>
           </div>
         </div>
+        ${backgroundSection(row)}
         ${row.isLive && !isUnlocked && hasContact ? '<p class="fallback">Unlock this lead in the results section above to reveal contact info.</p>' : ''}
         ${row.website ? `<p><a href="${row.website}" target="_blank" rel="noopener">Company website &rarr;</a></p>` : ''}
         ${row.sourceUrl ? `<p><a href="${row.sourceUrl}" target="_blank" rel="noopener">Source for this trigger &rarr;</a></p>` : ''}
@@ -441,6 +459,12 @@
         createdDaysAgo: 0,
         website: c.website || null,
         sourceUrl: c.source_url || null,
+        // Company background (from the research the agent already ran) --
+        // shown in the detail modal when you click into a company.
+        recentNews: c.recent_news || null,
+        hiringStatus: c.hiring_status || null,
+        techStack: c.tech_stack_hints || null,
+        industryDetail: c.industry_detail || null,
       };
     }
 

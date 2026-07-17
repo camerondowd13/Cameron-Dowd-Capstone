@@ -1497,6 +1497,27 @@ nav.site-nav a.nav-cta:hover {
   margin-bottom: 14px;
 }
 
+/* Company background dossier inside the lead detail modal */
+.company-background {
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+
+.bg-heading {
+  margin-bottom: 10px;
+}
+
+.bg-line {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  margin: 0 0 10px;
+}
+
+.bg-line strong {
+  color: var(--ink);
+}
+
 /* .fallback's own margin varies by context (inline inside a table cell vs.
    a standalone paragraph after other content) -- this modifier covers the
    latter, replacing inline style="margin-top:14px". */
