@@ -107,3 +107,27 @@ drop policy if exists "public write apollo_phone_reveals" on apollo_phone_reveal
 create policy "public write apollo_phone_reveals" on apollo_phone_reveals for insert with check (true);
 drop policy if exists "public upsert apollo_phone_reveals" on apollo_phone_reveals;
 create policy "public upsert apollo_phone_reveals" on apollo_phone_reveals for update using (true);
+
+-- ---------------------------------------------------------------
+-- demo_rate_limits: caps how many times the public "try it free" page
+-- (contact.html) can trigger a live account_finder.find_accounts() run per
+-- visitor -- each run is a real Anthropic (Opus) + Exa cost. Unlike every
+-- other table above, this one is NOT open to the anon key -- api/find-
+-- accounts.js reads/writes it with the Supabase service-role key, so no
+-- client-side script can see or tamper with the rate-limit counts. RLS is
+-- enabled with zero policies, which blocks all anon/authenticated access
+-- by default and leaves only the service role able to touch it.
+-- ---------------------------------------------------------------
+
+create table if not exists demo_rate_limits (
+  id bigint generated always as identity primary key,
+  ip text not null,
+  requested_at timestamptz not null default now()
+);
+
+alter table demo_rate_limits enable row level security;
+
+-- BYPASSRLS lets service_role skip the policies above, but it's a separate
+-- thing from ordinary SQL table privileges -- without this grant, service_role
+-- gets a plain "permission denied for table" error, not an RLS-related one.
+grant select, insert on public.demo_rate_limits to service_role;

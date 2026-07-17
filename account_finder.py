@@ -337,6 +337,7 @@ def find_accounts(
     city: str | None = None,
     industry: str | None = None,
     limit: int = DEFAULT_LIMIT,
+    target_titles: list[str] | None = None,
 ) -> list[dict]:
     """Find candidate companies matching ICP filters, trigger-first.
 
@@ -521,7 +522,9 @@ def find_accounts(
             fully_qualified = []
             for c in stage2_qualified:
                 try:
-                    result = contact_finder.find_contacts(c["name"], domain=_domain(c["website"]))
+                    result = contact_finder.find_contacts(
+                        c["name"], domain=_domain(c["website"]), target_titles=target_titles
+                    )
                 except Exception as e:
                     # A single company's contact lookup failing (e.g. the model
                     # not calling submit_contacts within its turn budget)

@@ -155,10 +155,12 @@ def _rank_by_title(person: dict, titles: list[str]) -> int:
 def _find_contacts_via_apollo(domain: str, titles: list[str], limit: int) -> list[dict]:
     """Apollo-first contact lookup: real named people, ranked by title
     match, with a synchronously-revealed verified email. Phone reveal
-    (async, credits-limited -- see apollo_client.py) is only attempted for
-    the single best-ranked match per company, to conserve Apollo's
-    separately-metered mobile-reveal credits across a whole run rather
-    than spend them 1-for-1 on every person searched.
+    (async, credits-limited -- see apollo_client.py) is requested for every
+    email-verified candidate up to `limit` at once, then polled for in
+    parallel -- one shared ~150s wait total, not 150s stacked per candidate,
+    since Apollo's webhook lands independently of when polling starts. This
+    raises the odds at least one candidate's phone lands within the window,
+    without multiplying the wait by how many candidates we try.
 
     Same PRD bar as the Exa path (_is_reachable: both email AND phone
     required) -- a person with only one of the two is dropped here too,
@@ -168,9 +170,12 @@ def _find_contacts_via_apollo(domain: str, titles: list[str], limit: int) -> lis
         return []
     people.sort(key=lambda p: _rank_by_title(p, titles))
 
-    contacts = []
-    for i, person in enumerate(people):
-        if len(contacts) >= limit:
+    # Stage 1: confirm email and kick off phone reveal for every candidate
+    # up to `limit`, so all the async reveal requests are already in flight
+    # before any polling starts.
+    pending = []
+    for person in people:
+        if len(pending) >= limit:
             break
         person_id = person.get("id")
         if not person_id:
@@ -181,18 +186,33 @@ def _find_contacts_via_apollo(domain: str, titles: list[str], limit: int) -> lis
         if not email:
             continue
 
-        phone = None
-        if i == 0 and apollo_client.request_phone_reveal(person_id):
-            phone = apollo_client.poll_phone_reveal(person_id)
-        if not phone:
+        if not apollo_client.request_phone_reveal(person_id):
             continue
 
-        contacts.append({
+        pending.append({
+            "person_id": person_id,
             "name": enriched["name"],
             "title": person.get("title"),
             "email": email,
+        })
+
+    if not pending:
+        return []
+
+    # Stage 2: one shared poll across every pending candidate's reveal.
+    phones = apollo_client.poll_phone_reveals([p["person_id"] for p in pending])
+
+    contacts = []
+    for p in pending:
+        phone = phones.get(p["person_id"])
+        if not phone:
+            continue
+        contacts.append({
+            "name": p["name"],
+            "title": p["title"],
+            "email": p["email"],
             "phone": phone,
-            "source_url": f"https://app.apollo.io/#/people/{person_id}",
+            "source_url": f"https://app.apollo.io/#/people/{p['person_id']}",
         })
 
     return contacts

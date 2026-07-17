@@ -1267,6 +1267,43 @@ nav.site-nav a.nav-cta:hover {
   color: var(--ink-soft);
 }
 
+/* Live-agent highlight -- flags the 3 real leads from "try it free" wherever
+   they appear (results cards, board preview, dashboard preview) */
+.live-badge {
+  display: inline-block;
+  position: relative;
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  background: var(--accent2);
+  color: #04211d;
+}
+
+.live-badge::before {
+  content: "*";
+  margin-right: 2px;
+}
+
+.live-row {
+  background: rgba(20, 184, 166, 0.08);
+  border-left: 3px solid var(--accent2);
+}
+
+.result-card.live-row {
+  border-color: var(--accent2);
+  border-left-width: 3px;
+}
+
+.status-line {
+  margin-top: 14px;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
 /* Reveal / unlock animation */
 .reveal-slot {
   position: relative;

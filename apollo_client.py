@@ -11,8 +11,9 @@ Phone reveal is NOT: Apollo only delivers a revealed mobile/direct-dial
 number via an async webhook POST, minutes after the request -- there's no
 phone number in the immediate response at all. api/apollo-phone-webhook.js
 receives that callback and writes it into the apollo_phone_reveals
-Supabase table; poll_phone_reveal() below polls that table, since this
-script has no long-running listener of its own to receive the callback
+Supabase table; poll_phone_reveals() below polls that table for several
+person ids at once (one shared timeout window, not one per person), since
+this script has no long-running listener of its own to receive the callback
 directly.
 """
 import os
@@ -48,7 +49,14 @@ def search_people(domain: str, titles: list[str], per_page: int = 5) -> list[dic
     """People Search: real people at `domain` matching `titles`. Returns
     raw Apollo person dicts (id, name, title, has_email, has_direct_phone,
     etc.) -- email/phone VALUES aren't included here, those require
-    enrich_email() / request_phone_reveal() per person id."""
+    enrich_email() / request_phone_reveal() per person id.
+
+    Filtered to contact_email_status verified/likely-to-engage so we don't
+    burn an enrichment call discovering a match Apollo already knows has no
+    email (e.g. has_email: false) -- confirmed happening in production
+    testing. Not filtered any tighter than that: Apollo's own coverage is
+    already thin for smaller companies, so over-filtering risks zero
+    candidates before enrichment even runs."""
     resp = requests.post(
         f"{APOLLO_BASE}/mixed_people/api_search",
         headers=_headers(),
@@ -56,6 +64,7 @@ def search_people(domain: str, titles: list[str], per_page: int = 5) -> list[dic
             "q_organization_domains_list": [domain],
             "person_titles": titles,
             "include_similar_titles": False,
+            "contact_email_status": ["verified", "likely to engage"],
             "per_page": per_page,
         },
         timeout=20,
@@ -108,25 +117,40 @@ def request_phone_reveal(person_id: str) -> bool:
     return True
 
 
-def poll_phone_reveal(person_id: str, timeout: int = PHONE_POLL_TIMEOUT) -> str | None:
-    """Polls the apollo_phone_reveals table (populated by
-    api/apollo-phone-webhook.js) for up to `timeout` seconds. Returns the
-    phone number once the webhook lands, or None on timeout -- the caller
-    treats that the same as Apollo never having a number (falls back to
-    general_office), not as an error."""
+def poll_phone_reveals(person_ids: list[str], timeout: int = PHONE_POLL_TIMEOUT) -> dict[str, str]:
+    """Polls the apollo_phone_reveals table for MULTIPLE person ids sharing
+    one timeout window, instead of one full timeout per person -- since
+    Apollo's webhook lands independently of when we start polling for it,
+    requesting reveals for several candidates up front and polling for all
+    of them at once means the wait is ~150s total regardless of how many
+    candidates we're trying, not 150s stacked per candidate.
+
+    Returns {person_id: phone} for whichever ids resolved before the
+    deadline; ids that never resolved are simply absent from the result --
+    same as a single-person timeout, not an error."""
+    if not person_ids:
+        return {}
     supabase_url, supabase_key = load_supabase_config()
     deadline = time.monotonic() + timeout
-    while True:
+    resolved: dict[str, str] = {}
+    remaining = set(person_ids)
+    while remaining and time.monotonic() < deadline:
         resp = requests.get(
             f"{supabase_url}/rest/v1/apollo_phone_reveals",
-            params={"apollo_person_id": f"eq.{person_id}", "select": "phone"},
+            params={
+                "apollo_person_id": f"in.({','.join(remaining)})",
+                "select": "apollo_person_id,phone",
+            },
             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"},
             timeout=10,
         )
         resp.raise_for_status()
-        rows = resp.json()
-        if rows and rows[0].get("phone"):
-            return rows[0]["phone"]
-        if time.monotonic() >= deadline:
-            return None
-        time.sleep(PHONE_POLL_INTERVAL)
+        for row in resp.json():
+            phone = row.get("phone")
+            pid = row.get("apollo_person_id")
+            if phone and pid in remaining:
+                resolved[pid] = phone
+                remaining.discard(pid)
+        if remaining:
+            time.sleep(PHONE_POLL_INTERVAL)
+    return resolved

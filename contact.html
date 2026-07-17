@@ -4,11 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Try it free — Sonar</title>
-  <meta name="description" content="See real sample matches for your state and industry, instantly.">
+  <meta name="description" content="Enter your ICP and get 3 real leads back live, then see them flow straight into an example board and dashboard.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="board.css">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
 </head>
 <body>
@@ -33,8 +34,8 @@
   <section class="section section-decor">
     <div class="wrap prose">
       <h1>Try it free — see it work for your ICP</h1>
-      <p>Tell us where you sell and who you sell to. We'll show you a few real matches — no signup, no waiting around — pulled from the exact criteria AEs and SDRs use to prospect in construction, manufacturing, and healthcare.</p>
-      <p><em>(Sample data shown below reflects real ICP criteria — state, company size, and job title — but is not a live data pull.)</em></p>
+      <p>Tell us where you sell and who you sell to. Our agent runs a real, live search — the same one that powers the product — and hands back 3 real leads. It takes about a minute, because it's actually doing the work: searching, verifying company size and buying triggers, then finding a real way to reach each one.</p>
+      <p><em>Below your 3 live leads, you'll see them flow straight into an example board and an example dashboard — a mix of illustrative sample accounts and your real results, so you can see the whole product at once.</em></p>
 
       <div class="demo-form">
         <div class="field">
@@ -101,13 +102,6 @@
             <option value="Construction">Construction</option>
             <option value="Manufacturing">Manufacturing</option>
             <option value="Healthcare">Healthcare</option>
-            <option value="Retail">Retail</option>
-            <option value="Real Estate">Real Estate</option>
-            <option value="Transportation & Logistics">Transportation & Logistics</option>
-            <option value="Hospitality">Hospitality</option>
-            <option value="Energy & Utilities">Energy & Utilities</option>
-            <option value="Professional Services">Professional Services</option>
-            <option value="Education">Education</option>
           </select>
         </div>
 
@@ -123,9 +117,11 @@
           </select>
         </div>
 
-        <button class="btn" id="showMatches">Show my matches</button>
-        <span class="note">Results are sample data seeded from real ICP criteria — see About for the story behind this tool.</span>
+        <button class="btn" id="showMatches">Find my leads</button>
+        <span class="note">A state is required — this runs a real live search, so we need at least a territory to search.</span>
       </div>
+
+      <p class="status-line" id="statusLine" hidden></p>
 
       <div class="token-bar" id="tokenBar" hidden>
         <span class="token-label">Unlock tokens</span>
@@ -135,10 +131,89 @@
       <div id="results"></div>
 
       <div class="below-results" id="belowResults" hidden>
-        <p>Like what you see? This is a sample of what the full tool delivers — live, verified, and ready to call. <a href="mailto:you@example.com">Get in touch</a> to talk about early access.</p>
+        <p>These 3 leads are real — flagged <span class="live-badge">live</span> everywhere they appear below, alongside illustrative sample accounts. Like what you see? <a href="mailto:you@example.com">Get in touch</a> to talk about early access.</p>
       </div>
 
       <p class="fallback">Prefer to talk first? Email <a href="mailto:you@example.com">you@example.com</a> <em>(placeholder — swap before launch)</em></p>
+    </div>
+  </section>
+
+  <section class="section section-decor">
+    <div class="wrap">
+      <div class="example-banner">
+        <span class="eyebrow" style="margin:0;">Example</span>
+        <p>This is what your board looks like inside Sonar. Sample accounts are illustrative — your 3 live leads above are mixed in and flagged <span class="live-badge">live</span>.</p>
+      </div>
+
+      <h2 style="margin-bottom:20px;">Example Board</h2>
+
+      <div class="table-wrap">
+        <table class="kanban-table">
+          <thead>
+            <tr>
+              <th>Company</th>
+              <th>Contact info</th>
+              <th>Contact</th>
+              <th>Status</th>
+              <th>Trigger</th>
+              <th>Verified</th>
+              <th>Created</th>
+            </tr>
+          </thead>
+          <tbody id="boardPreviewBody">
+            <tr><td colspan="7"><p class="empty-state">Run a search above to populate this board.</p></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-decor">
+    <div class="wrap">
+      <div class="example-banner">
+        <span class="eyebrow" style="margin:0;">Example</span>
+        <p>This is what your dashboard looks like inside Sonar — a snapshot of your pipeline the moment you log in.</p>
+      </div>
+
+      <h2 style="margin-bottom:28px;">Example Dashboard</h2>
+
+      <div class="dash-stats">
+        <div class="dash-stat">
+          <span class="dash-stat-number" id="previewStatTotal">0</span>
+          <span class="dash-stat-label">Accounts tracked</span>
+        </div>
+        <div class="dash-stat">
+          <span class="dash-stat-number" id="previewStatVerified">0</span>
+          <span class="dash-stat-label">Fully verified contacts</span>
+        </div>
+        <div class="dash-stat">
+          <span class="dash-stat-number" id="previewStatActive">0</span>
+          <span class="dash-stat-label">In active conversation</span>
+        </div>
+        <div class="dash-stat">
+          <span class="dash-stat-number" id="previewStatClosed">0</span>
+          <span class="dash-stat-label">Closed</span>
+        </div>
+      </div>
+
+      <h2 class="dash-subhead">Recent accounts</h2>
+
+      <div class="table-wrap">
+        <table class="kanban-table">
+          <thead>
+            <tr>
+              <th>Company</th>
+              <th>Contact</th>
+              <th>Status</th>
+              <th>Verified</th>
+              <th>Created</th>
+            </tr>
+          </thead>
+          <tbody id="dashboardPreviewBody">
+            <tr><td colspan="5"><p class="empty-state">Run a search above to populate this dashboard.</p></td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </section>
 
@@ -170,47 +245,62 @@
     </div>
   </footer>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="config.js"></script>
   <script src="data.js"></script>
   <script>
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // ---- constants shared with board.html / dashboard.html ----
+    const AVATAR_COLORS = ['#4c5fe0', '#22c55e', '#f59e0b', '#ec4899', '#06b6d4', '#8b5cf6', '#ef4444', '#14b8a6'];
+    const STATUS_CYCLE = ['contacted', 'in_conversation', 'opportunity', 'closed', 'researching'];
+    const STATUS_LABELS = {
+      new: 'New', partial: 'Partial', researching: 'Researching', contacted: 'Contacted',
+      in_conversation: 'In Conversation', opportunity: 'Opportunity', closed: 'Closed',
+    };
 
-    async function fetchRealMatches(territory, industry, title) {
-      let query = supabaseClient.from('accounts').select('*');
-      if (territory) query = query.eq('territory', territory);
-      if (industry) query = query.eq('industry', industry);
-      if (title) query = query.eq('contact_title', title);
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Supabase fetch error:', error);
-        return [];
+    function avatarColor(name) {
+      let hash = 0;
+      for (let i = 0; i < (name || '').length; i++) {
+        hash = name.charCodeAt(i) + ((hash << 5) - hash);
       }
-
-      return data.map(row => ({
-        company: row.name,
-        territory: row.territory,
-        industry: row.industry,
-        size: `${row.size} employees`,
-        trigger: row.buying_triggers || row.trigger_type || '',
-        contact: row.contact_name,
-        title: row.contact_title,
-        phone: row.contact_phone,
-        email: row.contact_email,
-        emailVerified: !!row.email_verified,
-        phoneVerified: !!row.phone_verified,
-      }));
+      return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
     }
 
+    function formatDate(iso) {
+      if (!iso) return '';
+      return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+
+    function daysAgoToIso(days) {
+      const d = new Date();
+      d.setDate(d.getDate() - days);
+      return d.toISOString();
+    }
+
+    function animateCount(el, target, duration) {
+      const start = performance.now();
+      function tick(now) {
+        const progress = Math.min((now - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        el.textContent = Math.round(eased * target);
+        if (progress < 1) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    }
+
+    // ---- state ----
+    const STARTING_TOKENS = 3;
+    let tokensRemaining = STARTING_TOKENS;
+    const unlockedIds = new Set();
+    let liveLeads = [];
+    let fillerRows = [];
+
+    // ---- elements ----
     const resultsEl = document.getElementById('results');
     const belowResultsEl = document.getElementById('belowResults');
     const tokenBarEl = document.getElementById('tokenBar');
     const tokenDotsEl = document.getElementById('tokenDots');
-
-    const STARTING_TOKENS = 3;
-    let tokensRemaining = STARTING_TOKENS;
+    const statusLineEl = document.getElementById('statusLine');
+    const boardBodyEl = document.getElementById('boardPreviewBody');
+    const dashboardBodyEl = document.getElementById('dashboardPreviewBody');
+    const showMatchesBtn = document.getElementById('showMatches');
 
     function maskPhone(phone) {
       if (!phone) return 'Not available';
@@ -232,92 +322,321 @@
       tokenDotsEl.innerHTML = dots;
     }
 
-    function renderResults(matches) {
+    // ---- data shaping ----
+    function buildFillerRows(territory) {
+      const byTerritory = territory ? SAMPLE_MATCHES.filter(m => m.territory === territory) : [];
+      const source = byTerritory.length >= 5 ? byTerritory : SAMPLE_MATCHES;
+      return source.slice(0, 7).map((m, i) => ({
+        id: `sample-${i}`,
+        company: m.company, territory: m.territory, industry: m.industry,
+        size: m.size, trigger: m.trigger,
+        contact: m.contact, title: m.title, phone: m.phone, email: m.email,
+        phoneVerified: true, emailVerified: true,
+        isLive: false,
+        status: STATUS_CYCLE[i % STATUS_CYCLE.length],
+        createdDaysAgo: 3 + i * 4,
+      }));
+    }
+
+    function mapLiveCandidate(c, i, territory, industry) {
+      const contact = (c.verified_contacts && c.verified_contacts[0]) || null;
+      const seen = (c.contacts_seen && c.contacts_seen[0]) || null;
+      return {
+        id: `live-${i}`,
+        company: c.name,
+        territory: territory || c.location || '',
+        industry: industry || '',
+        size: c.employee_count ? `${c.employee_count} employees` : '',
+        trigger: c.buying_trigger || '',
+        contact: (contact && contact.name) || (seen && seen.name) || 'General office',
+        title: (contact && contact.title) || (seen && seen.title) || '',
+        phone: (contact && contact.phone) || (c.general_office && c.general_office.phone) || null,
+        email: (contact && contact.email) || (c.general_office && c.general_office.email) || null,
+        phoneVerified: !!contact,
+        emailVerified: !!contact,
+        isLive: true,
+        status: 'new',
+        createdDaysAgo: 0,
+      };
+    }
+
+    // ---- results cards ----
+    function unlockLead(id) {
+      if (tokensRemaining <= 0 || unlockedIds.has(id)) return;
+      tokensRemaining -= 1;
+      unlockedIds.add(id);
+      renderAll();
+    }
+
+    function renderResults() {
       resultsEl.innerHTML = '';
 
-      if (matches.length === 0) {
-        resultsEl.innerHTML = '<p class="empty-state">No sample matches for that exact combination yet — try loosening a filter (e.g. "Any title").</p>';
+      if (liveLeads.length === 0) {
+        resultsEl.innerHTML = '<p class="empty-state">No live matches for that exact combination — try loosening a filter (e.g. "Any industry").</p>';
         belowResultsEl.hidden = true;
         tokenBarEl.hidden = true;
         return;
       }
 
-      const shown = matches.slice(0, 3);
-
-      shown.forEach(m => {
-        const isApproved = m.emailVerified && m.phoneVerified;
+      liveLeads.forEach(m => {
+        const hasContact = !!(m.phone || m.email);
+        const isUnlocked = unlockedIds.has(m.id);
 
         const card = document.createElement('div');
-        card.className = 'result-card';
+        card.className = 'result-card live-row';
         card.innerHTML = `
-          <h4>${m.company}</h4>
-          <div class="meta">${m.territory} · ${m.industry} · ${m.size} · Trigger: ${m.trigger}</div>
-          <div class="contact-name"><strong>${m.contact || 'General office'}</strong>${m.title ? `, ${m.title}` : ''}</div>
+          <h4>${m.company} <span class="live-badge">live</span></h4>
+          <div class="meta">${m.territory} · ${m.industry || 'any industry'} · ${m.size} · Trigger: ${m.trigger || 'none noted'}</div>
+          <div class="contact-name"><strong>${m.contact}</strong>${m.title ? `, ${m.title}` : ''}</div>
           <div class="contact-details">
             <div class="detail">
               <span class="detail-label">Phone ${m.phoneVerified ? '<span class="verify-badge">✓ verified</span>' : '<span class="verify-badge verify-badge-pending">pending</span>'}</span>
-              <span class="reveal-slot">
+              <span class="reveal-slot ${isUnlocked ? 'revealed' : ''}">
                 <span class="masked">${maskPhone(m.phone)}</span>
-                <span class="real">${m.phone}</span>
+                <span class="real">${m.phone || 'Not available'}</span>
               </span>
             </div>
             <div class="detail">
               <span class="detail-label">Email ${m.emailVerified ? '<span class="verify-badge">✓ verified</span>' : '<span class="verify-badge verify-badge-pending">pending</span>'}</span>
-              <span class="reveal-slot">
+              <span class="reveal-slot ${isUnlocked ? 'revealed' : ''}">
                 <span class="masked">${maskEmail(m.email)}</span>
-                <span class="real">${m.email}</span>
+                <span class="real">${m.email || 'Not available'}</span>
               </span>
             </div>
           </div>
-          ${isApproved
-            ? '<button class="unlock-btn">Unlock contact (1 token)</button>'
-            : '<p class="fallback" style="margin-top:14px;">Not shown as a full match yet — still awaiting phone and email verification.</p>'}
+          ${!hasContact
+            ? '<p class="fallback" style="margin-top:14px;">No reachable contact found for this one — that happens with live data. Try another search.</p>'
+            : (isUnlocked
+                ? '<span class="fallback" style="margin-top:14px;">Unlocked</span>'
+                : `<button class="unlock-btn" data-id="${m.id}">Unlock contact (1 token)</button>`)}
         `;
 
         const unlockBtn = card.querySelector('.unlock-btn');
         if (unlockBtn) {
           unlockBtn.addEventListener('click', () => {
             if (tokensRemaining <= 0) return;
-
-            tokensRemaining -= 1;
-            renderTokenDots();
-
-            card.querySelectorAll('.reveal-slot').forEach(slot => slot.classList.add('revealed'));
-            unlockBtn.textContent = 'Unlocked';
-            unlockBtn.disabled = true;
-
-            if (tokensRemaining === 0) {
-              resultsEl.querySelectorAll('.unlock-btn:not(:disabled)').forEach(btn => {
-                btn.disabled = true;
-                btn.textContent = 'Out of tokens';
-              });
-            }
+            unlockLead(m.id);
           });
         }
 
         resultsEl.appendChild(card);
       });
 
-      tokensRemaining = STARTING_TOKENS;
-      renderTokenDots();
       tokenBarEl.hidden = false;
       belowResultsEl.hidden = false;
+      renderTokenDots();
+
+      if (tokensRemaining === 0) {
+        resultsEl.querySelectorAll('.unlock-btn').forEach(btn => {
+          btn.disabled = true;
+          btn.textContent = 'Out of tokens';
+        });
+      }
     }
 
-    document.getElementById('showMatches').addEventListener('click', async () => {
+    // ---- board preview ----
+    function renderBoardRow(row) {
+      const tr = document.createElement('tr');
+      tr.className = row.isLive ? 'live-row' : '';
+
+      const initial = (row.company || '?').charAt(0).toUpperCase();
+      const avatarHtml = `<div class="company-avatar" style="background:${avatarColor(row.company)}">${initial}</div>`;
+      const isApproved = row.phoneVerified && row.emailVerified;
+      const verifyBadge = isApproved
+        ? '<span class="verify-badge">✓ verified</span>'
+        : '<span class="verify-badge verify-badge-pending">unverified</span>';
+      const statusLabel = STATUS_LABELS[row.status] || row.status;
+      const liveTag = row.isLive ? ' <span class="live-badge">live</span>' : '';
+      const hasContact = !!(row.phone || row.email);
+      const isUnlocked = !row.isLive || unlockedIds.has(row.id);
+
+      let actionsCell;
+      if (!hasContact) {
+        actionsCell = '<span class="fallback">No contact found</span>';
+      } else if (row.isLive && !isUnlocked) {
+        actionsCell = '<span class="fallback">Unlock above to reveal</span>';
+      } else if (row.isLive && isUnlocked) {
+        actionsCell = `
+          <div class="revealed-contact">
+            ${row.phone ? `<a class="revealed-pill" href="tel:${row.phone}">📞 ${row.phone}</a>` : ''}
+            ${row.email ? `<a class="revealed-pill" href="mailto:${row.email}">✉️ ${row.email}</a>` : ''}
+          </div>`;
+      } else {
+        // Fake filler row -- free, no-cost reveal toggle, same as the real board.
+        actionsCell = `
+          <div class="card-actions-wrap">
+            <div class="card-actions">
+              <button type="button" class="card-action-btn reveal-toggle" title="Show contact info">📞</button>
+              <button type="button" class="card-action-btn reveal-toggle" title="Show contact info">✉️</button>
+            </div>
+            <div class="revealed-contact" hidden>
+              <a class="revealed-pill" href="tel:${row.phone}">📞 ${row.phone}</a>
+              <a class="revealed-pill" href="mailto:${row.email}">✉️ ${row.email}</a>
+            </div>
+          </div>`;
+      }
+
+      tr.innerHTML = `
+        <td>
+          <div class="company-cell">
+            ${avatarHtml}
+            <div class="company-name-block">
+              <span class="company-link">${row.company}${liveTag}</span>
+              <span class="company-subtitle">${row.territory || ''} · ${row.industry || ''}</span>
+            </div>
+          </div>
+        </td>
+        <td>${actionsCell}</td>
+        <td>${row.contact || ''}</td>
+        <td style="text-transform:capitalize;">${statusLabel}</td>
+        <td><span class="trigger-label">${row.trigger || ''}</span></td>
+        <td>${verifyBadge}</td>
+        <td>${row.createdDaysAgo === 0 ? 'Just now' : formatDate(daysAgoToIso(row.createdDaysAgo))}</td>
+      `;
+
+      const revealedContact = tr.querySelector('.revealed-contact[hidden]');
+      if (revealedContact) {
+        tr.querySelectorAll('.reveal-toggle').forEach(btn => {
+          btn.addEventListener('click', () => {
+            revealedContact.hidden = !revealedContact.hidden;
+          });
+        });
+      }
+
+      return tr;
+    }
+
+    function renderBoardPreview() {
+      const rows = [...liveLeads, ...fillerRows];
+      boardBodyEl.innerHTML = '';
+      if (rows.length === 0) {
+        boardBodyEl.innerHTML = '<tr><td colspan="7"><p class="empty-state">Run a search above to populate this board.</p></td></tr>';
+        return;
+      }
+      rows.forEach(row => boardBodyEl.appendChild(renderBoardRow(row)));
+    }
+
+    // ---- dashboard preview ----
+    function renderDashboardPreview() {
+      const rows = [...liveLeads, ...fillerRows];
+
+      if (rows.length === 0) {
+        dashboardBodyEl.innerHTML = '<tr><td colspan="5"><p class="empty-state">Run a search above to populate this dashboard.</p></td></tr>';
+        animateCount(document.getElementById('previewStatTotal'), 0, 300);
+        animateCount(document.getElementById('previewStatVerified'), 0, 300);
+        animateCount(document.getElementById('previewStatActive'), 0, 300);
+        animateCount(document.getElementById('previewStatClosed'), 0, 300);
+        return;
+      }
+
+      const verifiedCount = rows.filter(r => r.phoneVerified && r.emailVerified).length;
+      const activeCount = rows.filter(r => r.status === 'in_conversation' || r.status === 'opportunity').length;
+      const closedCount = rows.filter(r => r.status === 'closed').length;
+
+      animateCount(document.getElementById('previewStatTotal'), rows.length, 700);
+      animateCount(document.getElementById('previewStatVerified'), verifiedCount, 700);
+      animateCount(document.getElementById('previewStatActive'), activeCount, 700);
+      animateCount(document.getElementById('previewStatClosed'), closedCount, 700);
+
+      dashboardBodyEl.innerHTML = '';
+      rows.slice(0, 5).forEach(row => {
+        const isApproved = row.phoneVerified && row.emailVerified;
+        const verifyBadge = isApproved
+          ? '<span class="verify-badge">✓ verified</span>'
+          : '<span class="verify-badge verify-badge-pending">unverified</span>';
+        const statusLabel = STATUS_LABELS[row.status] || row.status;
+        const liveTag = row.isLive ? ' <span class="live-badge">live</span>' : '';
+
+        const tr = document.createElement('tr');
+        tr.className = row.isLive ? 'live-row' : '';
+        tr.innerHTML = `
+          <td>${row.company}${liveTag}</td>
+          <td>${row.contact || ''}</td>
+          <td style="text-transform:capitalize;">${statusLabel}</td>
+          <td>${verifyBadge}</td>
+          <td>${row.createdDaysAgo === 0 ? 'Just now' : formatDate(daysAgoToIso(row.createdDaysAgo))}</td>
+        `;
+        dashboardBodyEl.appendChild(tr);
+      });
+    }
+
+    function renderAll() {
+      renderResults();
+      renderBoardPreview();
+      renderDashboardPreview();
+    }
+
+    // ---- loading status line ----
+    const STATUS_LINES = [
+      (state) => `Searching companies in ${state}...`,
+      () => 'Verifying employee counts and buying triggers...',
+      () => 'Finding real contacts...',
+      () => 'Almost done...',
+    ];
+    let statusInterval = null;
+
+    function startStatusLine(state) {
+      let i = 0;
+      statusLineEl.hidden = false;
+      statusLineEl.textContent = STATUS_LINES[0](state);
+      statusInterval = setInterval(() => {
+        i = (i + 1) % STATUS_LINES.length;
+        statusLineEl.textContent = STATUS_LINES[i](state);
+      }, 15000);
+    }
+
+    function stopStatusLine() {
+      clearInterval(statusInterval);
+      statusLineEl.hidden = true;
+    }
+
+    // ---- search ----
+    showMatchesBtn.addEventListener('click', async () => {
       const territory = document.getElementById('territory').value;
       const industry = document.getElementById('industry').value;
       const title = document.getElementById('title').value;
 
-      const fakeMatches = SAMPLE_MATCHES.filter(m => {
-        return (!territory || m.territory === territory)
-          && (!industry || m.industry === industry)
-          && (!title || m.title === title);
-      }).map(m => ({ ...m, emailVerified: true, phoneVerified: true }));
+      if (!territory) {
+        resultsEl.innerHTML = '<p class="empty-state">Pick a state to run a live search — it triggers a real agent call, so we need at least a territory.</p>';
+        return;
+      }
 
-      const realMatches = await fetchRealMatches(territory, industry, title);
+      showMatchesBtn.disabled = true;
+      resultsEl.innerHTML = '';
+      belowResultsEl.hidden = true;
+      tokenBarEl.hidden = true;
+      startStatusLine(territory);
 
-      renderResults([...realMatches, ...fakeMatches]);
+      try {
+        const resp = await fetch('/api/find-accounts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ state: territory, industry: industry || null, title: title || null }),
+        });
+        const data = await resp.json();
+
+        if (resp.status === 429) {
+          resultsEl.innerHTML = `<p class="empty-state">${data.message || "You've hit today's free limit for live searches. Try again tomorrow."}</p>`;
+          return;
+        }
+        if (!resp.ok) {
+          resultsEl.innerHTML = `<p class="empty-state">Something went wrong on our end${data.error ? `: ${data.error}` : ''}. Try again in a moment.</p>`;
+          return;
+        }
+
+        const candidates = Array.isArray(data) ? data : (data.candidates || []);
+        liveLeads = candidates.map((c, i) => mapLiveCandidate(c, i, territory, industry));
+        fillerRows = buildFillerRows(territory);
+        tokensRemaining = STARTING_TOKENS;
+        unlockedIds.clear();
+
+        renderAll();
+      } catch (e) {
+        resultsEl.innerHTML = `<p class="empty-state">Couldn't reach the live agent: ${e.message}. Try again in a moment.</p>`;
+      } finally {
+        showMatchesBtn.disabled = false;
+        stopStatusLine();
+      }
     });
   </script>
 

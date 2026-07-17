@@ -88,6 +88,7 @@ def find_accounts_route():
             city=body.get("city"),
             industry=body.get("industry"),
             limit=body.get("limit", account_finder.DEFAULT_LIMIT),
+            target_titles=body.get("target_titles"),
         )
         return jsonify(candidates=candidates)
     except ValueError as e:
