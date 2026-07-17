@@ -1267,6 +1267,13 @@ nav.site-nav a.nav-cta:hover {
   color: var(--ink-soft);
 }
 
+/* contact.html's board/dashboard previews use a <span>, not <a>, for
+   company-link (no real account.html record to navigate to) -- board.css's
+   existing hover styling doesn't imply clickability on a span, so add it here */
+.company-link {
+  cursor: pointer;
+}
+
 /* Live-agent highlight -- flags the 3 real leads from "try it free" wherever
    they appear (results cards, board preview, dashboard preview) */
 .live-badge {

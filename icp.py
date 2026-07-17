@@ -1,11 +1,14 @@
 """Cameron's ICP definition (PRD Appendix A), shared by AccountFinder and
 AccountResearcher so both tools stay in sync on what actually qualifies."""
 
-MIN_SIZE = 20
-MAX_SIZE = 399
+MIN_SIZE = 50
+MAX_SIZE = 1000
 
 # Invoice-volume proxy: these verticals typically run 200+ invoices/month,
-# the actual (not directly queryable) target.
+# the actual (not directly queryable) target. Range widened from 20-399 to
+# 50-1000 (2026-07-16) to raise the odds of finding enough real, verified
+# candidates per search -- a deliberate tradeoff against tighter ICP fit,
+# not a bug.
 VALID_INDUSTRIES = ["construction", "manufacturing", "healthcare"]
 
 # PRD Appendix A, open item: "the trailing clause is open-ended" (title list

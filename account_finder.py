@@ -71,7 +71,10 @@ load_dotenv(".env.local")
 MODEL = "claude-opus-4-8"
 DEFAULT_LIMIT = 20
 EXA_NUM_RESULTS = 8  # per search -- up from 5, so each query pulls more raw material
-MIN_SEARCH_BUDGET = 4
+MIN_SEARCH_BUDGET = 8  # raised from 4 (2026-07-16) -- more search turns per
+# request, to reduce thin/zero-candidate results on narrower state+industry
+# combos. Trades more time/cost per search for a higher odds of hitting the
+# requested limit.
 
 # Search budget scales with how many candidates are actually requested --
 # a fixed 4 searches (the old default) only ever surfaces ~20 raw results
@@ -245,7 +248,10 @@ VERIFY_TOOL = {
 # one. Stage 2 goes deep on each surviving candidate individually: dedicated
 # searches per company, then one batched extraction call (not one call per
 # company, to keep cost/latency down) to actually fill the gaps.
-MAX_VERIFY_CANDIDATES_MULTIPLIER = 3  # cap stage 2 cost: verify at most limit*3 candidates
+MAX_VERIFY_CANDIDATES_MULTIPLIER = 5  # raised from 3 (2026-07-16) -- verify a
+# bigger slice of stage 1's raw candidates, so more of what was already
+# found gets a real shot at clearing stage 2/3, instead of only the first
+# `limit*3` ever being examined more deeply.
 
 
 def _verify_candidate_details(client, exa, candidates, seen_urls, search_text_corpus):

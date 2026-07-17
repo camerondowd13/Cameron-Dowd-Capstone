@@ -243,6 +243,16 @@
     </div>
   </footer>
 
+  <div class="modal-overlay" id="detailModalOverlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="detailModalTitle"></h3>
+        <button type="button" class="modal-close" id="detailModalClose" aria-label="Close">&times;</button>
+      </div>
+      <div id="detailModalBody"></div>
+    </div>
+  </div>
+
   <script src="data.js"></script>
   <script>
     // ---- constants for the board/dashboard preview sections below ----
@@ -299,6 +309,10 @@
     const boardBodyEl = document.getElementById('boardPreviewBody');
     const dashboardBodyEl = document.getElementById('dashboardPreviewBody');
     const showMatchesBtn = document.getElementById('showMatches');
+    const detailModalOverlay = document.getElementById('detailModalOverlay');
+    const detailModalTitle = document.getElementById('detailModalTitle');
+    const detailModalBody = document.getElementById('detailModalBody');
+    const detailModalClose = document.getElementById('detailModalClose');
 
     function maskPhone(phone) {
       if (!phone) return 'Not available';
@@ -319,6 +333,46 @@
       }
       tokenDotsEl.innerHTML = dots;
     }
+
+    // ---- detail modal (expand-in-place, no navigation, no database) ----
+    function openDetailModal(row) {
+      const isUnlocked = !row.isLive || unlockedIds.has(row.id);
+      const hasContact = !!(row.phone || row.email);
+      const liveTag = row.isLive ? ' <span class="live-badge">live</span>' : '';
+
+      detailModalTitle.innerHTML = `${row.company}${liveTag}`;
+      detailModalBody.innerHTML = `
+        <div class="meta" style="margin-bottom:14px;">${row.territory || ''} · ${row.industry || 'any industry'} · ${row.size || ''}</div>
+        <p style="margin-bottom:14px;"><strong>Buying trigger:</strong> ${row.trigger || 'none noted'}</p>
+        <div class="contact-name" style="margin-bottom:14px;"><strong>${row.contact || ''}</strong>${row.title ? `, ${row.title}` : ''}</div>
+        <div class="contact-details" style="margin-bottom:14px;">
+          <div class="detail">
+            <span class="detail-label">Phone ${row.phoneVerified ? '<span class="verify-badge">✓ verified</span>' : '<span class="verify-badge verify-badge-pending">pending</span>'}</span>
+            <span>${isUnlocked ? (row.phone || 'Not available') : maskPhone(row.phone)}</span>
+          </div>
+          <div class="detail">
+            <span class="detail-label">Email ${row.emailVerified ? '<span class="verify-badge">✓ verified</span>' : '<span class="verify-badge verify-badge-pending">pending</span>'}</span>
+            <span>${isUnlocked ? (row.email || 'Not available') : maskEmail(row.email)}</span>
+          </div>
+        </div>
+        ${row.isLive && !isUnlocked && hasContact ? '<p class="fallback">Unlock this lead in the results section above to reveal contact info.</p>' : ''}
+        ${row.website ? `<p><a href="${row.website}" target="_blank" rel="noopener">Company website &rarr;</a></p>` : ''}
+        ${row.sourceUrl ? `<p><a href="${row.sourceUrl}" target="_blank" rel="noopener">Source for this trigger &rarr;</a></p>` : ''}
+      `;
+      detailModalOverlay.classList.add('open');
+    }
+
+    function closeDetailModal() {
+      detailModalOverlay.classList.remove('open');
+    }
+
+    detailModalClose.addEventListener('click', closeDetailModal);
+    detailModalOverlay.addEventListener('click', (e) => {
+      if (e.target === detailModalOverlay) closeDetailModal();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeDetailModal();
+    });
 
     // ---- data shaping ----
     function buildFillerRows(territory) {
@@ -355,6 +409,8 @@
         isLive: true,
         status: 'new',
         createdDaysAgo: 0,
+        website: c.website || null,
+        sourceUrl: c.source_url || null,
       };
     }
 
@@ -501,6 +557,8 @@
         });
       }
 
+      tr.querySelector('.company-link').addEventListener('click', () => openDetailModal(row));
+
       return tr;
     }
 
@@ -548,12 +606,13 @@
         const tr = document.createElement('tr');
         tr.className = row.isLive ? 'live-row' : '';
         tr.innerHTML = `
-          <td>${row.company}${liveTag}</td>
+          <td><span class="company-link">${row.company}${liveTag}</span></td>
           <td>${row.contact || ''}</td>
           <td style="text-transform:capitalize;">${statusLabel}</td>
           <td>${verifyBadge}</td>
           <td>${row.createdDaysAgo === 0 ? 'Just now' : formatDate(daysAgoToIso(row.createdDaysAgo))}</td>
         `;
+        tr.querySelector('.company-link').addEventListener('click', () => openDetailModal(row));
         dashboardBodyEl.appendChild(tr);
       });
     }
