@@ -22,6 +22,7 @@ import account_finder
 import account_researcher
 import contact_finder
 import enrich_pipeline
+import prospecting_agent
 
 app = Flask(__name__)
 CORS(app)
@@ -128,6 +129,49 @@ def find_contacts_route():
             limit=body.get("limit", 3),
         )
         return jsonify(result)
+    except Exception as e:
+        return jsonify(error=str(e)), 500
+
+
+@app.post("/email-leads")
+@require_api_key
+def email_leads_route():
+    """Demo endpoint: takes the leads the 'try it free' page just got back
+    and emails them to the AE's own inbox, reusing the exact same report
+    format as the scheduled daily run (prospecting_agent.send_lead_report).
+
+    Accepts already-frontend-mapped leads (company/contact/phone/email/etc.)
+    rather than raw AccountFinder candidates, so the browser can send what
+    it already has without re-fetching."""
+    body = request.get_json(force=True, silent=True) or {}
+    leads = body.get("leads") or []
+    territory = body.get("territory") or ""
+    if not leads:
+        return jsonify(error="'leads' is required"), 400
+
+    results = []
+    for lead in leads:
+        verified = bool(lead.get("phoneVerified") and lead.get("emailVerified"))
+        contact_name = lead.get("contact")
+        if contact_name == "General office":
+            contact_name = None
+        results.append({
+            "status": "new",
+            "name": lead.get("company"),
+            "territory": lead.get("territory") or territory,
+            "contact_tier": "verified direct contact" if verified else "general office",
+            "gmail_draft": False,
+            "contact_name": contact_name,
+            "contact_title": lead.get("title"),
+            "contact_email": lead.get("email"),
+            "contact_phone": lead.get("phone"),
+            "buying_trigger": lead.get("trigger"),
+            "error": None,
+        })
+
+    try:
+        prospecting_agent.send_lead_report(results)
+        return jsonify(status="sent", count=len(results))
     except Exception as e:
         return jsonify(error=str(e)), 500
 

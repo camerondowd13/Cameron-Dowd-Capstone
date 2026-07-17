@@ -140,6 +140,8 @@
 
       <div class="below-results" id="belowResults" hidden>
         <p>These 3 leads are real — flagged <span class="live-badge">live</span> everywhere they appear below, alongside illustrative sample accounts. Like what you see? <a href="mailto:camerondowd13@gmail.com">Get in touch</a> to talk about early access.</p>
+        <button class="btn" id="emailLeadsBtn">Email these leads to me</button>
+        <span class="status-line" id="emailStatus" hidden></span>
       </div>
 
       <p class="fallback">Prefer to talk first? Email <a href="mailto:camerondowd13@gmail.com">camerondowd13@gmail.com</a></p>
@@ -333,6 +335,9 @@
     const boardBodyEl = document.getElementById('boardPreviewBody');
     const dashboardKanbanEl = document.getElementById('dashboardKanban');
     const showMatchesBtn = document.getElementById('showMatches');
+    const emailLeadsBtn = document.getElementById('emailLeadsBtn');
+    const emailStatusEl = document.getElementById('emailStatus');
+    let lastTerritory = '';
 
     const KANBAN_STATUSES = ['new', 'researching', 'contacted', 'in_conversation', 'opportunity', 'closed'];
     const detailModalOverlay = document.getElementById('detailModalOverlay');
@@ -771,6 +776,12 @@
         fillerRows = buildFillerRows(territory);
         tokensRemaining = STARTING_TOKENS;
         unlockedIds.clear();
+        lastTerritory = territory;
+
+        // Reset the "email these leads" button for the fresh result set.
+        emailLeadsBtn.disabled = false;
+        emailLeadsBtn.textContent = 'Email these leads to me';
+        emailStatusEl.hidden = true;
 
         renderAll();
       } catch (e) {
@@ -778,6 +789,37 @@
       } finally {
         showMatchesBtn.disabled = false;
         stopStatusLine();
+      }
+    });
+
+    // ---- "email these leads to me" button ----
+    emailLeadsBtn.addEventListener('click', async () => {
+      if (liveLeads.length === 0) return;
+      emailLeadsBtn.disabled = true;
+      emailStatusEl.hidden = false;
+      emailStatusEl.textContent = 'Sending...';
+      try {
+        const resp = await fetch('/api/email-leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ leads: liveLeads, territory: lastTerritory }),
+        });
+        const data = await resp.json();
+        if (resp.status === 429) {
+          emailStatusEl.textContent = data.message || "You've hit today's free demo limit. Try again tomorrow.";
+          emailLeadsBtn.disabled = false;
+          return;
+        }
+        if (!resp.ok) {
+          emailStatusEl.textContent = `Couldn't send${data.error ? `: ${data.error}` : ''}. Try again in a moment.`;
+          emailLeadsBtn.disabled = false;
+          return;
+        }
+        emailStatusEl.textContent = 'Sent — check your inbox.';
+        emailLeadsBtn.textContent = 'Email sent';
+      } catch (e) {
+        emailStatusEl.textContent = `Couldn't send: ${e.message}. Try again in a moment.`;
+        emailLeadsBtn.disabled = false;
       }
     });
   </script>

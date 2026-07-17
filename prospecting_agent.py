@@ -499,6 +499,18 @@ def _send_summary_email(composio: Composio, results: list[dict], failed_states: 
     )
 
 
+def send_lead_report(results: list[dict], failed_states: list[tuple[str, str]] | None = None) -> None:
+    """Public wrapper: build a Composio client and send the leads report,
+    reusing _send_summary_email's exact formatting. Lets callers that don't
+    already have a Composio client (e.g. server.py's /email-leads demo
+    endpoint) send the same report the scheduled daily run sends."""
+    composio = Composio(
+        api_key=os.getenv("COMPOSIO_API_KEY"),
+        toolkit_versions={"gmail": GMAIL_TOOLKIT_VERSION},
+    )
+    _send_summary_email(composio, results, failed_states)
+
+
 def run_daily() -> None:
     """Entry point for the scheduled 8am cloud routine: runs the full
     pipeline across DAILY_TERRITORIES, then sends (not drafts) one summary
