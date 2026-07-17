@@ -475,12 +475,25 @@ def _discover_via_apollo(
         console.print(f"[cyan]  -> {len(candidates)} total candidates across {page} page(s)[/cyan]")
         console.rule("[bold blue]RESEARCH — per-candidate ICP + trigger check[/bold blue]")
 
+    # Hard cap on how many companies we deeply research + contact-check per
+    # search. Each one costs ~15-25s (research + contact lookup), and a live
+    # web search must finish well under the backend's 300s kill timeout. If we
+    # haven't found `limit` fully-qualified leads within this many tries, we
+    # return what we have rather than churn until the request is killed.
+    max_to_try = max(limit * 2, 6)
+
     qualified = []
+    tried = 0
     for c in candidates:
         if len(qualified) >= limit:
             if trace:
                 console.print(f"[dim]Reached limit ({limit}) -- stopping.[/dim]")
             break
+        if tried >= max_to_try:
+            if trace:
+                console.print(f"[dim]Tried {tried} companies (cap) -- stopping with {len(qualified)}.[/dim]")
+            break
+        tried += 1
         try:
             research = account_researcher.research_account(c["name"], domain=c["domain"])
         except Exception as e:

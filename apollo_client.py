@@ -33,8 +33,14 @@ APOLLO_API_KEY = os.getenv("APOLLO_API_KEY")
 APOLLO_WEBHOOK_URL = os.getenv("APOLLO_WEBHOOK_URL")
 APOLLO_BASE = "https://api.apollo.io/api/v1"
 
-PHONE_POLL_TIMEOUT = 150  # seconds -- Apollo's webhook typically lands within a few minutes
-PHONE_POLL_INTERVAL = 10
+# Phone reveal is async (Apollo POSTs the number to a webhook). We poll for
+# it, but only briefly: a live web search can't wait minutes per company, and
+# stacking long waits across several companies blows past the backend's 300s
+# limit and gets the whole request killed. If the number hasn't landed in this
+# window, we fall back to the company's general office line (guaranteed from
+# Apollo's org record), so the lead is still complete -- just not a direct dial.
+PHONE_POLL_TIMEOUT = 25  # seconds (was 150)
+PHONE_POLL_INTERVAL = 5
 
 
 def _headers() -> dict:

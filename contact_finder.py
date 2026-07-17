@@ -152,7 +152,7 @@ def _rank_by_title(person: dict, titles: list[str]) -> int:
     return len(titles)
 
 
-def _find_contacts_via_apollo(domain: str, titles: list[str], limit: int) -> tuple[list[dict], list[dict]]:
+def _find_contacts_via_apollo(domain: str, titles: list[str], limit: int, poll_phone: bool = True) -> tuple[list[dict], list[dict]]:
     """Apollo-first contact lookup. Returns (contacts, seen):
 
     contacts: fully-verified people with BOTH a confirmed email AND phone
@@ -167,9 +167,10 @@ def _find_contacts_via_apollo(domain: str, titles: list[str], limit: int) -> tup
     for a real mid-size company even when it can't confirm both contact
     fields, so this makes reachability far more reliable.
 
-    Phone reveal (async, credits-limited) is requested for every
-    email-verified candidate up front, then polled in parallel -- one
-    shared ~150s wait, not stacked per candidate."""
+    poll_phone=False skips the (slow, async) phone reveal entirely and just
+    returns the named people -- used for the ALTERNATE lookup, where we only
+    need a name to ask for and the company's general line covers reach, so
+    there's no reason to spend the phone-wait budget on it."""
     people = apollo_client.search_people(domain, titles, per_page=limit * 2)
     if not people:
         return [], []
@@ -178,7 +179,7 @@ def _find_contacts_via_apollo(domain: str, titles: list[str], limit: int) -> tup
     seen = []      # named people to ask for (name + title), contact optional
     pending = []   # email-confirmed people with a phone reveal in flight
     for person in people:
-        if len(pending) >= limit:
+        if (poll_phone and len(pending) >= limit) or (not poll_phone and len(seen) >= limit):
             break
         person_id = person.get("id")
         if not person_id:
@@ -189,6 +190,9 @@ def _find_contacts_via_apollo(domain: str, titles: list[str], limit: int) -> tup
         title = person.get("title")
         if name and not any(s["name"] == name for s in seen):
             seen.append({"name": name, "title": title})
+
+        if not poll_phone:
+            continue  # names only -- skip the phone reveal for the alternate lookup
 
         email = enriched["email"]
         if not email:
@@ -259,7 +263,7 @@ def find_contacts(
             # alternate at the same company" behavior, and it also stops the
             # pipeline from churning through companies hunting for a rare title.
             if target_titles and not apollo_contacts and not apollo_seen:
-                alt_contacts, alt_seen = _find_contacts_via_apollo(domain, TARGET_TITLES, limit)
+                alt_contacts, alt_seen = _find_contacts_via_apollo(domain, TARGET_TITLES, limit, poll_phone=False)
                 if alt_contacts or alt_seen:
                     alternate_note = f"No {', '.join(target_titles)} found at this company — here's an alternate decision-maker."
                     apollo_contacts, apollo_seen = alt_contacts, alt_seen
